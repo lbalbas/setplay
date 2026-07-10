@@ -11,3 +11,9 @@ dist-ssr
 .vinxi
 __unconfig*
 todos.json
+
+# Playwright
+playwright-report/
+test-results/
+
+# drizzle/  <-- intentionally NOT ignored; migrations should be committed

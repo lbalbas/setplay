@@ -64,3 +64,18 @@ skills:
   - when: "Programmatic route tree building as an alternative to filesystem conventions: rootRoute, index, route, layout, physical, defineVirtualSubtreeConfig. Use with TanStack Router plugin's virtualRouteConfig option."
     use: "@tanstack/virtual-file-routes#virtual-file-routes"
 <!-- intent-skills:end -->
+
+## Application Building Context
+
+Read the following files in order before implementing or making any architectural decision:
+
+1. [project-overview.md](file:///C:/dev/setplay/context/project-overview.md) — product definition, goals, features, and scope
+2. [architecture-context.md](file:///C:/dev/setplay/context/architecture-context.md) — system structure, boundaries, storage model, and invariants
+3. [ui-context.md](file:///C:/dev/setplay/context/ui-context.md) — theme, colors, typography, and component conventions (Note: currently postponed)
+4. [code-standards.md](file:///C:/dev/setplay/context/code-standards.md) — implementation rules, backend hybrid architecture, and conventions
+5. [ai-workflow-rules.md](file:///C:/dev/setplay/context/ai-workflow-rules.md) — development workflow, scoping rules, and doc syncing
+6. [progress-tracker.md](file:///C:/dev/setplay/context/progress-tracker.md) — current phase, completed work, open questions, and next steps
+
+Update [progress-tracker.md](file:///C:/dev/setplay/context/progress-tracker.md) after each meaningful implementation change.
+
+If implementation changes the architecture, scope, or standards documented in the context files, update the relevant file before continuing.
