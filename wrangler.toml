@@ -1,0 +1,31 @@
+name = "setplay"
+main = "src/server/index.ts"
+compatibility_date = "2025-06-11"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "setplay-db"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+
+[triggers]
+crons = ["* * * * *"]
+
+[vars]
+# Non-secret environment variables
+# Secrets should be set via: wrangler secret put SECRET_NAME
+# Required secrets (set with `wrangler secret put`):
+#   TWITCH_CLIENT_ID
+#   TWITCH_CLIENT_SECRET
+#   STARTGG_API_TOKEN
+#   VAPID_PUBLIC_KEY
+#   VAPID_PRIVATE_KEY
+#   VAPID_SUBJECT         (e.g. "mailto:your@email.com")
+#   ADMIN_TOKEN           (a random secret for /admin/* access)
+
+[dev]
+port = 8787
