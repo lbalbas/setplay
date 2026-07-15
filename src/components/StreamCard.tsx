@@ -17,7 +17,7 @@ export default function StreamCard({stream, onClick}: StreamCardProps) {
   return (
     <article
       onClick={onClick}
-      className="group flex flex-col justify-between overflow-hidden rounded-xl border border-line bg-surface transition-all duration-300 hover:-translate-y-1 hover:border-accent hover:shadow-[0_8px_30px_rgba(255, 242, 130, 0.06)] cursor-pointer"
+      className="group flex flex-col justify-between overflow-hidden rounded-xl border border-line bg-surface transition-all duration-300 hover:-translate-y-1 hover:border-accent hover:shadow-[0_8px_30px_rgba(255,242,130,0.06)] cursor-pointer"
     >
       {/* Thumbnail Container */}
       <div className="relative aspect-video w-full overflow-hidden bg-base">
@@ -26,20 +26,20 @@ export default function StreamCard({stream, onClick}: StreamCardProps) {
             {stream.gameName.split(" ").map(w => w[0]).join("")}
           </div>
         </div>
-      </div>
 
-      <div className="absolute left-2.5 top-2.5 flex flex-wrap gap-1.5 z-10">
-        <span className="inline-flex items-center gap-1 rounded-full bg-black/70 backgrop-blur-sm px-2 py-0.5 text-[10px] font-bold text-accent tracking-wider uppercase">
-          <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse"/>
-            LIVE
-        </span>
-
-        {stream.type === "tournament" && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 border border-accent/25 backdrop-blur-sm px-2 py-0.5 text-[10px] font-bold text-accent uppercase">
-            <Trophy className="h-2.5 w-2.5" />
-            Tournament
+        <div className="absolute left-2.5 top-2.5 flex flex-wrap gap-1.5 z-10">
+          <span className="inline-flex items-center gap-1 rounded-full bg-black/70 backdrop-blur-sm px-2 py-0.5 text-[10px] font-bold text-accent tracking-wider uppercase">
+            <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse"/>
+              LIVE
           </span>
-        )}
+
+          {stream.type === "tournament" && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 border border-accent/25 backdrop-blur-sm px-2 py-0.5 text-[10px] font-bold text-accent uppercase">
+              <Trophy className="h-2.5 w-2.5" />
+              Tournament
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="absolute right-2.5 top-2.5 z-10">
@@ -59,7 +59,7 @@ export default function StreamCard({stream, onClick}: StreamCardProps) {
         </div>
 
         {stream.matchMetadata && (
-          <div className="mt-3 rounded bg-accent/5 bordder border-accent/10 px-2 py-1.5 text-[11px] text-accent font-medium">
+          <div className="mt-3 rounded bg-accent/5 border border-accent/10 px-2 py-1.5 text-[11px] text-accent font-medium">
             {stream.matchMetadata}
           </div>
         )}
