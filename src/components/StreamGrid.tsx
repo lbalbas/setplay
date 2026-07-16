@@ -1,5 +1,3 @@
-// src/components/StreamGrid.tsx
-
 import { MOCK_STREAMS } from "#/mocks/data";
 import StreamCard from "./StreamCard";
 
