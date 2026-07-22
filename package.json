@@ -2,7 +2,7 @@
   "name": "setplay",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@10.11.0",
+  "packageManager": "pnpm@11.15.1",
   "imports": {
     "#/*": "./src/*"
   },
@@ -33,6 +33,7 @@
     "@tanstack/router-plugin": "^1.132.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
     "drizzle-orm": "^0.44.1",
     "lucide-react": "^0.545.0",
     "react": "^19.2.0",
@@ -61,13 +62,5 @@
     "vite": "^8.0.0",
     "vitest": "^4.1.5",
     "wrangler": "^4.19.0"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "lightningcss",
-      "sharp",
-      "workerd"
-    ]
   }
 }
