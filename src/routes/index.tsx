@@ -1,9 +1,9 @@
-import { createFileRoute } from '@tanstack/react-router'
-import StreamGrid from '#/components/StreamGrid'
-import FeaturedHero from '#/components/FeaturedHero'
-import EventCalendar from '#/components/EventCalendar'
+import { createFileRoute } from "@tanstack/react-router";
+import StreamGrid from "#/components/StreamGrid";
+import FeaturedHero from "#/components/FeaturedHero";
+import EventCalendar from "#/components/EventCalendar";
 
-export const Route = createFileRoute('/')({ component: App })
+export const Route = createFileRoute("/")({ component: App });
 
 function App() {
   return (
@@ -12,5 +12,5 @@ function App() {
       <StreamGrid />
       <EventCalendar />
     </main>
-  )
+  );
 }

@@ -31,7 +31,7 @@
 
 ## Open Questions
 
-- *None at this time.*
+- _None at this time._
 
 ## Architecture Decisions
 

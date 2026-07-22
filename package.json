@@ -2,7 +2,6 @@
   "name": "setplay",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@11.15.1",
   "imports": {
     "#/*": "./src/*"
   },
@@ -66,5 +65,6 @@
     "vite": "^8.0.0",
     "vitest": "^4.1.5",
     "wrangler": "^4.19.0"
-  }
+  },
+  "packageManager": "pnpm@11.15.1"
 }

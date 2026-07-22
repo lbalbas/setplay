@@ -55,7 +55,7 @@ export const eventGames = sqliteTable(
   },
   (t) => ({
     pk: primaryKey({ columns: [t.eventId, t.gameId] }),
-  })
+  }),
 );
 
 // ---------------------------------------------------------------------------
@@ -99,5 +99,4 @@ export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 export type NewPushSubscription = typeof pushSubscriptions.$inferInsert;
 
 export type SubscriptionInterest = typeof subscriptionInterests.$inferSelect;
-export type NewSubscriptionInterest =
-  typeof subscriptionInterests.$inferInsert;
+export type NewSubscriptionInterest = typeof subscriptionInterests.$inferInsert;

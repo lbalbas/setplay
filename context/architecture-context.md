@@ -2,14 +2,14 @@
 
 ## Stack
 
-| Layer             | Technology                 | Role                                                               |
-| ----------------- | -------------------------- | ------------------------------------------------------------------ |
-| Framework         | TanStack Start + TypeScript| Full-stack React app with server/client boundaries and Vinxi/Nitro |
-| UI & Styling      | Tailwind CSS v4            | Responsive interface and theme tokens                              |
-| Database          | Drizzle ORM + Cloudflare D1| Relational SQLite database for games, events, and push credentials |
-| Transient Caching | Cloudflare KV              | Hot caching of live stream list and Twitch authorization tokens    |
-| Cron Triggers     | Cloudflare Worker Crons    | Recurring background API ingestion and stream matching jobs        |
-| Push Services     | Web Push API               | VAPID-based browser alerts dispatched from serverless worker       |
+| Layer             | Technology                  | Role                                                               |
+| ----------------- | --------------------------- | ------------------------------------------------------------------ |
+| Framework         | TanStack Start + TypeScript | Full-stack React app with server/client boundaries and Vinxi/Nitro |
+| UI & Styling      | Tailwind CSS v4             | Responsive interface and theme tokens                              |
+| Database          | Drizzle ORM + Cloudflare D1 | Relational SQLite database for games, events, and push credentials |
+| Transient Caching | Cloudflare KV               | Hot caching of live stream list and Twitch authorization tokens    |
+| Cron Triggers     | Cloudflare Worker Crons     | Recurring background API ingestion and stream matching jobs        |
+| Push Services     | Web Push API                | VAPID-based browser alerts dispatched from serverless worker       |
 
 ## System Boundaries
 

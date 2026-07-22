@@ -13,6 +13,7 @@ Build SetPlay incrementally using a spec-driven, highly focused development loop
 ## When to Split Work
 
 Split an implementation step if it mixes:
+
 - Database schema changes and API route additions.
 - Background cron worker matching logic and frontend stream card components.
 - Push notification service worker registration and administrative manual override forms.
@@ -28,6 +29,7 @@ If a task cannot be fully tested and verified locally within a single turn, the 
 ## Keeping Docs in Sync
 
 Update the relevant context file whenever:
+
 - The database schema in `src/server/db/schema.ts` is updated (update the corresponding architecture/database sections).
 - The matching algorithm logic changes or a new API (e.g., YouTube streams) is added.
 - The UI styling variables or design layout patterns are finalized.

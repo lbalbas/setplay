@@ -28,7 +28,7 @@
 
 ## Styling
 
-- *Postponed / TBD* (All styling rules will be documented here once the UI decisions are finalized).
+- _Postponed / TBD_ (All styling rules will be documented here once the UI decisions are finalized).
 
 ## File Organization
 

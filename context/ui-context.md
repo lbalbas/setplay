@@ -8,17 +8,17 @@ All colors are mapped to CSS custom variables in `src/styles.css` and applied vi
 
 ### Color Palette
 
-| Role | CSS Variable | Hex / Value | Usage |
-| :--- | :--- | :--- | :--- |
-| **Page Background** | `--bg-base` | `#0A0A08` | Deep obsidian base. Accents content images and thumbnails. |
-| **Surface (Cards)** | `--bg-surface` | `#141411` | Warm slate charcoal. Used for stream cards and sidebar containers. |
-| **Hover / Active Surface** | `--bg-elevated` | `#1F1F1A` | Selected buttons, dropdown items, active states. |
-| **Subtle Border** | `--border-default` | `#292923` | Clean grid-lines, card outlines, header dividing line. |
-| **Primary Text** | `--text-primary` | `#FFFFFF` | Clear white for titles, values, and emphasis. |
-| **Secondary Text** | `--text-secondary` | `#9E9E93` | Warm champagne-gray for description text and metadata. |
-| **Accent Primary** | `--accent-primary` | `#FFF282` | Neon pastel yellow. Main accent for active tags, LIVE dots, and button outlines. |
-| **Accent Glow** | `--accent-glow` | `rgba(255, 242, 130, 0.12)` | Subtle glow drop-shadows or translucent overlays. |
-| **Success/State** | `--state-success` | `#00F0A0` | Sleek mint green for verified checks and push alert success indicators. |
+| Role                       | CSS Variable       | Hex / Value                 | Usage                                                                            |
+| :------------------------- | :----------------- | :-------------------------- | :------------------------------------------------------------------------------- |
+| **Page Background**        | `--bg-base`        | `#0A0A08`                   | Deep obsidian base. Accents content images and thumbnails.                       |
+| **Surface (Cards)**        | `--bg-surface`     | `#141411`                   | Warm slate charcoal. Used for stream cards and sidebar containers.               |
+| **Hover / Active Surface** | `--bg-elevated`    | `#1F1F1A`                   | Selected buttons, dropdown items, active states.                                 |
+| **Subtle Border**          | `--border-default` | `#292923`                   | Clean grid-lines, card outlines, header dividing line.                           |
+| **Primary Text**           | `--text-primary`   | `#FFFFFF`                   | Clear white for titles, values, and emphasis.                                    |
+| **Secondary Text**         | `--text-secondary` | `#9E9E93`                   | Warm champagne-gray for description text and metadata.                           |
+| **Accent Primary**         | `--accent-primary` | `#FFF282`                   | Neon pastel yellow. Main accent for active tags, LIVE dots, and button outlines. |
+| **Accent Glow**            | `--accent-glow`    | `rgba(255, 242, 130, 0.12)` | Subtle glow drop-shadows or translucent overlays.                                |
+| **Success/State**          | `--state-success`  | `#00F0A0`                   | Sleek mint green for verified checks and push alert success indicators.          |
 
 ## Typography
 
@@ -28,6 +28,7 @@ All colors are mapped to CSS custom variables in `src/styles.css` and applied vi
 ## Border Radius
 
 Borders should be clean and rounded using the following hierarchy:
+
 - **Buttons / Tags**: `rounded-full` (capsule style).
 - **Stream Cards / Widgets**: `rounded-xl`.
 - **Modals / Drawers**: `rounded-2xl`.

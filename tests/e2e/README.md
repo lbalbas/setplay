@@ -3,6 +3,7 @@
 Place Playwright E2E tests in this directory.
 
 ## Conventions
+
 - Files must end in `.spec.ts`
 - Focus on critical user flows only:
   - `dashboard.spec.ts` — Live Now dashboard renders streams

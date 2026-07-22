@@ -6,7 +6,6 @@ export default function FeaturedHero() {
 
   return (
     <section className="grid grid-cols-1 gap-4 lg:grid-cols-[3fr_2fr]">
-
       {/* LEFT: Player Panel */}
       <div className="group relative aspect-video w-full overflow-hidden rounded-xl border border-line bg-base transition-all duration-300 hover:border-accent/40 hover:shadow-[0_0_40px_rgba(255,242,130,0.05)]">
         {/* Placeholder gradient background */}
@@ -33,7 +32,6 @@ export default function FeaturedHero() {
 
       {/* RIGHT: Info Panel */}
       <div className="flex flex-col justify-between rounded-xl border border-line bg-surface p-6">
-
         {/* Top Section */}
         <div className="flex flex-col gap-4">
           {/* Headline Badge */}
@@ -70,7 +68,9 @@ export default function FeaturedHero() {
             ["Prize Pool", stream.prizePool],
           ].map(([label, value]) => (
             <div key={label} className="flex flex-col items-center gap-1 px-3 first:pl-0 last:pr-0">
-              <span className="text-[10px] uppercase tracking-widest text-copy-secondary">{label}</span>
+              <span className="text-[10px] uppercase tracking-widest text-copy-secondary">
+                {label}
+              </span>
               <span className="text-lg font-bold text-copy-primary">{value}</span>
             </div>
           ))}
@@ -99,7 +99,6 @@ export default function FeaturedHero() {
           )}
         </div>
       </div>
-
     </section>
   );
 }
