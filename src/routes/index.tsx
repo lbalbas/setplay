@@ -7,10 +7,17 @@ export const Route = createFileRoute("/")({ component: App });
 
 function App() {
   return (
-    <main className="w-11/12 mx-auto max-w-screen-2xl">
+    <main className="mx-auto w-11/12 max-w-screen-2xl flex flex-col gap-8 py-8">
       <FeaturedHero />
-      <StreamGrid />
-      <EventCalendar />
+      
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[3fr_1fr]">
+        <div>
+          <StreamGrid />
+        </div>
+        <div>
+          <EventCalendar />
+        </div>
+      </div>
     </main>
   );
 }
