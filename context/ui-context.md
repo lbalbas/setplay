@@ -36,6 +36,7 @@ Borders should be clean and rounded using the following hierarchy:
 ## Layout & Navigation Patterns
 
 The visual design layout and wireframes are based on the hybrid design mockup:
+
 - [setplay_hybrid_mockup.png](file:///C:/dev/setplay/context/setplay_hybrid_mockup.png)
 
 1. **Root Navigation Shell**:
