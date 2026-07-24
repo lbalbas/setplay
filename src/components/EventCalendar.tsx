@@ -106,7 +106,7 @@ export default function EventCalendar() {
               className={`
                 w-8 h-8 flex items-center justify-center rounded-full text-sm transition-all
                 ${!isCurrentMonth ? "text-copy-secondary/30" : "text-copy-primary"}
-                ${dateString === selectedDay ? "bg-accent text-black font-bold" : ""}
+                ${dateString === selectedDay ? "bg-accent text-black! font-bold" : ""}
                 ${isSameDay(date, today) && dateString !== selectedDay ? "border border-accent/40 text-accent" : ""}
                 ${!isCurrentMonth && dateString !== selectedDay ? "hover:bg-white/5" : "hover:bg-white/10"}
               `}
