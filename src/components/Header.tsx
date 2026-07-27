@@ -3,7 +3,7 @@ import { EarthIcon } from "lucide-react";
 
 export default function Header() {
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--line)] bg-[var(--header-bg)] px-4 backdrop-blur-lg">
+    <header className="sticky top-0 z-50 border-b border-(--line) bg-(--header-bg) px-4 backdrop-blur-lg">
       <nav className="mx-auto w-11/12 max-w-screen-2xl flex justify-between py-4">
         <h2 className="m-0 text-accent font-semibold tracking-tight w-full inline-flex items-center">
           <Link to="/" className="">
