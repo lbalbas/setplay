@@ -1,15 +1,21 @@
 import { Link } from "@tanstack/react-router";
 import { EarthIcon } from "lucide-react";
+import { SearchIcon } from "lucide-react";
 
 export default function Header() {
   return (
-    <header className="sticky top-0 z-50 border-b border-(--line) bg-(--header-bg) px-4 backdrop-blur-lg">
+    <header className="sticky top-0 z-50 border-b border-(--line) bg-(--header-bg) backdrop-blur-lg">
       <nav className="mx-auto w-11/12 max-w-screen-2xl flex justify-between py-4">
         <h2 className="m-0 text-accent font-semibold tracking-tight w-full inline-flex items-center">
           <Link to="/" className="">
             Setplay
           </Link>
         </h2>
+
+        <div className="w-full flex items-center gap-2 relative">
+          <SearchIcon className="h-4 w-4 text-copy-secondary absolute left-4" />
+          <input id="search" type="text" className="w-80 bg-elevated rounded-4xl py-2 pl-10 pr-5 text-copy-primary" />
+        </div>
 
         <div className="w-full flex justify-end items-center gap-4">
           <a href="/login" className="inline-flex items-center text-copy-secondary">
