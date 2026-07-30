@@ -6,7 +6,6 @@
 
 ## Current Goal
 
-- Establish theme variables and build frontend components with high-fidelity mock data before wiring up Drizzle migrations and backend emulation.
 
 ## Completed
 
@@ -17,15 +16,18 @@
 - **Context Definition**: Created and finalized all SetPlay developer guidelines and system specifications (`project-overview.md`, `architecture-context.md`, `ui-context.md`, `code-standards.md`, `ai-workflow-rules.md`, `AGENTS.md`).
 - **Dependencies Setup**: Installed `zod` for type-safe validation boundaries.
 - **pnpm v11 Migration**: Migrated `pnpm.onlyBuiltDependencies` from `package.json` to `allowBuilds` in `pnpm-workspace.yaml` for pnpm 11 compatibility.
+- **CSS Theme Variables**: Setting up the Obsidian & Neon Yellow palette inside `src/styles.css` using Tailwind v4 custom theme mappings.
+- **Mock Data Setup**: Create a comprehensive mock data set for games, active events, tournament streams, and casual streams.
+- **UI Component Assembly**: Implement the main layout components (`FeaturedHero`, `StreamGrid`, `CalendarSidebar`, and updated `Header`/`Footer` navigation) styled strictly in the Obsidian-yellow theme.
+- **UI Refactoring Complete**: Refactored Header navbar, GameFilterBar position, StreamGrid stream type filters, section separators (`🏆 PINNED TOURNAMENTS` badge line and `ALL STREAMS` line), and stream card styling on branch `feature/game-filter-and-stream-grid-refactor`.
 
 ## In Progress
 
-- **CSS Theme Variables**: Setting up the Obsidian & Neon Yellow palette inside `src/styles.css` using Tailwind v4 custom theme mappings.
+- **Events Directory & Details Page**: Build out events listing and individual event view.
+
 
 ## Next Up
-
-- **Mock Data Setup**: Create a comprehensive mock data set for games, active events, tournament streams, and casual streams.
-- **UI Component Assembly**: Implement the main layout components (`FeaturedHero`, `StreamGrid`, `CalendarSidebar`, and updated `Header`/`Footer` navigation) styled strictly in the Obsidian-yellow theme.
+- **Events page**: Implement the events page with a list of events and event details.
 - **Database Migrations & Emulation**: Set up Drizzle migration workflows and verify wrangler local emulation (`wrangler dev` with D1 and KV).
 - **Backend Integrations**: Build the Twitch Helix and start.gg API handlers and the 4-layer matching worker.
 
