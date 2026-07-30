@@ -1,46 +1,49 @@
-import { useState } from "react";
 import { MOCK_GAMES } from "#/mocks/data";
 
-type Game = (typeof MOCK_GAMES)[0];
-
 interface GameFilterBarProps {
-  onFilter: (games: Game[]) => void;
-  initialGames: Game[];
+  selectedGame: string;
+  onSelectGame: (gameId: string) => void;
+  games?: typeof MOCK_GAMES;
 }
 
-export default function GameFilterBar({ onFilter, initialGames }: GameFilterBarProps) {
-  const [filteredGames, setFilteredGames] = useState<Game[]>([]);
-
-  const onFilterChange = (game: Game) => {
-    const filtered = filteredGames.includes(game)
-      ? filteredGames.filter((g) => g !== game)
-      : [...filteredGames, game];
-    setFilteredGames(filtered);
-    onFilter(filtered);
-  };
-
-  const clearFilter = () => {
-    setFilteredGames([]);
-    onFilter(initialGames);
-  };
-
+export default function GameFilterBar({
+  selectedGame,
+  onSelectGame,
+  games = MOCK_GAMES,
+}: GameFilterBarProps) {
   return (
-    <div className="overflow-x-auto min-w-0 h-fit text-xs flex-1 text-accent/60">
-      <div className="flex items-center flex-nowrap gap-x-3">
-        {/*Clear filter*/}
-        <div className="cursor-pointer shrink-0" onClick={() => clearFilter()}>
-          X
-        </div>
-        {initialGames?.map((game) => (
-          <span
-            className="cursor-pointer shrink-0"
-            onClick={() => onFilterChange(game)}
+    <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
+      {/* "All" Pill */}
+      <button
+        type="button"
+        onClick={() => onSelectGame("all")}
+        className={`shrink-0 rounded-full px-3.5 py-1 text-xs font-semibold transition-colors duration-150 ${
+          selectedGame === "all"
+            ? "bg-accent text-black shadow-sm"
+            : "bg-[#181814] text-[#a0a095] hover:bg-[#22221c] hover:text-white border border-[#2a2a22]"
+        }`}
+      >
+        All
+      </button>
+
+      {/* Game Pills */}
+      {games.map((game) => {
+        const isSelected = selectedGame === game.id || selectedGame === game.slug;
+        return (
+          <button
             key={game.id}
+            type="button"
+            onClick={() => onSelectGame(game.id)}
+            className={`shrink-0 rounded-full px-3.5 py-1 text-xs font-medium transition-colors duration-150 ${
+              isSelected
+                ? "bg-accent text-black font-semibold shadow-sm"
+                : "bg-[#181814] text-[#a0a095] hover:bg-[#22221c] hover:text-white border border-[#2a2a22]"
+            }`}
           >
-            {game.name}
-          </span>
-        ))}
-      </div>
+            {game.slug.toUpperCase()}
+          </button>
+        );
+      })}
     </div>
   );
 }
