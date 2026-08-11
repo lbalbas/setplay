@@ -20,6 +20,7 @@
 - **Mock Data Setup**: Create a comprehensive mock data set for games, active events, tournament streams, and casual streams.
 - **UI Component Assembly**: Implement the main layout components (`FeaturedHero`, `StreamGrid`, `CalendarSidebar`, and updated `Header`/`Footer` navigation) styled strictly in the Obsidian-yellow theme.
 - **UI Refactoring Complete**: Refactored Header navbar, GameFilterBar position, StreamGrid stream type filters, section separators (`🏆 PINNED TOURNAMENTS` badge line and `ALL STREAMS` line), and stream card styling on branch `feature/game-filter-and-stream-grid-refactor`.
+- **Accessibility & HTML Semantics Audit**: Audited HTML tags, improved semantics (description lists for data grids, button elements for filters) and added ARIA attributes for screen readers across the frontend layout.
 
 ## In Progress
 

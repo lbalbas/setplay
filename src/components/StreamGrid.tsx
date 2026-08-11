@@ -56,14 +56,14 @@ export default function StreamGrid({ selectedGame: propSelectedGame }: StreamGri
       <div className="flex flex-wrap items-center justify-between gap-4 pb-2">
         {/* Title with Icon */}
         <div className="flex items-center gap-2.5">
-          <TrendingUp className="h-5 w-5 text-accent" />
+          <TrendingUp aria-hidden="true" className="h-5 w-5 text-accent" />
           <h2 className="font-serif text-2xl font-bold tracking-tight text-white">
             Live Streams
           </h2>
         </div>
 
         {/* Stream Type Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
+        <div role="group" aria-label="Stream type filters" className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
           {STREAM_TYPE_FILTERS.map((filter) => {
             const isSelected = selectedType === filter.id;
             return (
@@ -71,6 +71,7 @@ export default function StreamGrid({ selectedGame: propSelectedGame }: StreamGri
                 key={filter.id}
                 type="button"
                 onClick={() => setSelectedType(filter.id)}
+                aria-pressed={isSelected}
                 className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all duration-150 ${
                   isSelected
                     ? "bg-accent text-black shadow-sm"
@@ -90,7 +91,7 @@ export default function StreamGrid({ selectedGame: propSelectedGame }: StreamGri
           {/* Section Separator */}
           <div className="flex items-center gap-3 my-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/50 bg-[#161611] px-3.5 py-1 text-xs font-extrabold text-accent uppercase tracking-wider shadow-sm">
-              <Trophy className="h-3.5 w-3.5" /> PINNED TOURNAMENTS
+              <Trophy aria-hidden="true" className="h-3.5 w-3.5" /> PINNED TOURNAMENTS
             </span>
             <div className="h-px flex-1 bg-[#24241d]" />
           </div>

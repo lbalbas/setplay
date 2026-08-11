@@ -12,11 +12,12 @@ export default function GameFilterBar({
   games = MOCK_GAMES,
 }: GameFilterBarProps) {
   return (
-    <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
+    <div role="group" aria-label="Game filters" className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
       {/* "All" Pill */}
       <button
         type="button"
         onClick={() => onSelectGame("all")}
+        aria-pressed={selectedGame === "all"}
         className={`shrink-0 rounded-full px-3.5 py-1 text-xs font-semibold transition-colors duration-150 ${
           selectedGame === "all"
             ? "bg-accent text-black shadow-sm"
@@ -34,6 +35,7 @@ export default function GameFilterBar({
             key={game.id}
             type="button"
             onClick={() => onSelectGame(game.id)}
+            aria-pressed={isSelected}
             className={`shrink-0 rounded-full px-3.5 py-1 text-xs font-medium transition-colors duration-150 ${
               isSelected
                 ? "bg-accent text-black font-semibold shadow-sm"

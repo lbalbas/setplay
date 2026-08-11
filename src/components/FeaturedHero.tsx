@@ -15,16 +15,17 @@ export default function FeaturedHero() {
         <div className="absolute inset-0 flex items-center justify-center">
           <button
             type="button"
+            aria-label="Play headline stream"
             className="flex h-16 w-16 items-center justify-center rounded-full border border-accent/30 bg-black/60 text-accent backdrop-blur-sm transition-all duration-200 hover:scale-110 hover:border-accent hover:bg-accent/10"
           >
-            <Play className="h-7 w-7 fill-current translate-x-0.5" />
+            <Play aria-hidden="true" className="h-7 w-7 fill-current translate-x-0.5" />
           </button>
         </div>
 
         {/* Live badge — bottom left */}
         <div className="absolute bottom-3 left-3">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-accent backdrop-blur-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
             LIVE · {(stream.viewerCount / 1000).toFixed(1)}K watching
           </span>
         </div>
@@ -36,7 +37,7 @@ export default function FeaturedHero() {
         <div className="flex flex-col gap-4">
           {/* Headline Badge */}
           <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-accent/25 bg-accent/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-accent">
-            <Trophy className="h-3 w-3" />
+            <Trophy aria-hidden="true" className="h-3 w-3" />
             Headline Event
           </span>
 
@@ -46,35 +47,35 @@ export default function FeaturedHero() {
           </h1>
 
           {/* Metadata Rows */}
-          <div className="flex flex-col gap-2 text-sm">
+          <dl className="flex flex-col gap-2 text-sm">
             {[
               ["Channel", stream.displayName],
               ["Game", stream.gameName],
               ["Stage", stream.matchMetadata],
             ].map(([label, value]) => (
               <div key={label} className="flex items-center gap-2">
-                <span className="w-16 shrink-0 text-xs text-copy-secondary">{label}</span>
-                <span className="font-medium text-copy-primary">{value}</span>
+                <dt className="w-16 shrink-0 text-xs text-copy-secondary">{label}</dt>
+                <dd className="font-medium text-copy-primary">{value}</dd>
               </div>
             ))}
-          </div>
+          </dl>
         </div>
 
         {/* Stats Row */}
-        <div className="my-6 grid grid-cols-3 divide-x divide-line">
+        <dl className="my-6 grid grid-cols-3 divide-x divide-line">
           {[
             ["Peak Viewers", stream.peakViewers],
             ["Duration", stream.duration],
             ["Prize Pool", stream.prizePool],
           ].map(([label, value]) => (
             <div key={label} className="flex flex-col items-center gap-1 px-3 first:pl-0 last:pr-0">
-              <span className="text-[10px] uppercase tracking-widest text-copy-secondary">
+              <dt className="text-[10px] uppercase tracking-widest text-copy-secondary">
                 {label}
-              </span>
-              <span className="text-lg font-bold text-copy-primary">{value}</span>
+              </dt>
+              <dd className="text-lg font-bold text-copy-primary">{value}</dd>
             </div>
           ))}
-        </div>
+        </dl>
 
         {/* CTA Buttons */}
         <div className="flex flex-col gap-2">
@@ -82,7 +83,7 @@ export default function FeaturedHero() {
             type="button"
             className="flex w-full items-center justify-center gap-2 rounded-full border border-accent bg-accent/10 py-3 text-sm font-bold text-accent transition-all duration-200 hover:bg-accent hover:text-base"
           >
-            <Play className="h-4 w-4 fill-current" />
+            <Play aria-hidden="true" className="h-4 w-4 fill-current" />
             Watch Now
           </button>
 
@@ -94,7 +95,7 @@ export default function FeaturedHero() {
               className="flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-copy-secondary transition-colors hover:text-copy-primary"
             >
               View Bracket
-              <ExternalLink className="h-3 w-3" />
+              <ExternalLink aria-hidden="true" className="h-3 w-3" />
             </a>
           )}
         </div>

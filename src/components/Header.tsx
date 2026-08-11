@@ -28,17 +28,18 @@ export default function Header({
         <div className="flex items-center">
           <Link to="/" className="flex items-center gap-1.5 font-serif text-2xl font-bold tracking-tight text-white">
             SetPlay
-            <span className="h-2 w-2 rounded-full bg-accent animate-pulse shadow-[0_0_8px_rgba(255,242,130,0.8)]" />
+            <span aria-hidden="true" className="h-2 w-2 rounded-full bg-accent animate-pulse shadow-[0_0_8px_rgba(255,242,130,0.8)]" />
           </Link>
         </div>
 
         {/* Search Bar */}
         <div className="relative flex-1 max-w-md mx-6">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-copy-primary/50" />
+          <Search aria-hidden="true" className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-copy-primary/50" />
           <input
             id="search"
             type="text"
             placeholder="Search streams, events, players..."
+            aria-label="Search streams, events, and players"
             className="w-full rounded-full bg-surface border py-2 pl-10 pr-4 text-xs text-copy-primary/80 placeholder-copy-primary/50 focus:border-accent focus:outline-none transition-colors"
           />
         </div>
@@ -50,9 +51,10 @@ export default function Header({
             type="button"
             className="relative p-2 rounded-full text-copy-primary/50 hover:text-copy-primary hover:bg-white/5 transition-colors"
             title="Notifications"
+            aria-label="Notifications"
           >
-            <Bell className="h-4 w-4" />
-            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-accent shadow-[0_0_6px_rgba(255,242,130,0.9)]" />
+            <Bell aria-hidden="true" className="h-4 w-4" />
+            <span aria-hidden="true" className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-accent shadow-[0_0_6px_rgba(255,242,130,0.9)]" />
           </button>
 
           {/* Admin Pill */}
@@ -60,14 +62,14 @@ export default function Header({
             to="/"
             className="inline-flex items-center gap-1.5 rounded-full border bg-surface px-3 py-1.5 text-xs font-semibold text-copy-secondary hover:text-copy-primary hover:border-accent-glow transition-colors"
           >
-            <Shield className="h-3.5 w-3.5 text-copy-primary/50" />
+            <Shield aria-hidden="true" className="h-3.5 w-3.5 text-copy-primary/50" />
             <span>ADMIN</span>
           </Link>
 
           {/* User Profile Pill */}
           <div className="inline-flex items-center gap-2 rounded-full bg-surface border border-accent-glow p-1 pr-3 text-xs font-semibold text-white">
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent text-black font-bold">
-              <Zap className="h-3.5 w-3.5 fill-black" />
+              <Zap aria-hidden="true" className="h-3.5 w-3.5 fill-black" />
             </span>
             <span>NuckleDu</span>
           </div>
@@ -95,7 +97,7 @@ export default function Header({
               Streams
             </Link>
             <Link
-              to="/"
+              to="/events"
               className={`relative py-1 transition-colors ${
                 currentPath === "/events"
                   ? "text-copy-primary font-bold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-accent"

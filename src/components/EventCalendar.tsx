@@ -75,14 +75,16 @@ export default function EventCalendar() {
             <button
               onClick={() => setViewDate((prev) => addDays(startOfMonth(prev), -31))}
               className="p-1 hover:bg-white/5 rounded-md transition-colors text-copy-secondary"
+              aria-label="Previous month"
             >
-              <ChevronLeft size={18} />
+              <ChevronLeft size={18} aria-hidden="true" />
             </button>
             <button
               onClick={() => setViewDate((prev) => addDays(startOfMonth(prev), 31))}
               className="p-1 hover:bg-white/5 rounded-md transition-colors text-copy-secondary"
+              aria-label="Next month"
             >
-              <ChevronRight size={18} />
+              <ChevronRight size={18} aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -98,11 +100,14 @@ export default function EventCalendar() {
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-y-1 mb-6">
+        <div role="grid" aria-label="Calendar days" className="grid grid-cols-7 gap-y-1 mb-6">
           {calendarDays.map(({ date, dateString, isCurrentMonth }) => (
             <button
               key={dateString}
               onClick={() => handleDayClick(dateString)}
+              aria-label={format(date, "MMMM d, yyyy")}
+              aria-pressed={dateString === selectedDay}
+              aria-current={isSameDay(date, today) ? "date" : undefined}
               className={`
                 w-8 h-8 flex items-center justify-center rounded-full text-sm transition-all
                 ${!isCurrentMonth ? "text-copy-secondary/30" : "text-copy-primary"}
