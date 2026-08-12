@@ -26,7 +26,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="font-sans antialiased wrap-anywhere selection:bg-accent/20">
+      <body className="font-sans wrap-anywhere antialiased selection:bg-accent/20">
         <GameFilterProvider>
           <Header />
           {children}

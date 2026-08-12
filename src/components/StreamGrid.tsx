@@ -28,7 +28,10 @@ export default function StreamGrid({ selectedGame: propSelectedGame }: StreamGri
     if (game) {
       return stream.gameId === game.id || stream.gameName === game.name;
     }
-    return stream.gameId === selectedGame || stream.gameName.toLowerCase().includes(selectedGame.toLowerCase());
+    return (
+      stream.gameId === selectedGame ||
+      stream.gameName.toLowerCase().includes(selectedGame.toLowerCase())
+    );
   };
 
   // Filter streams by selected game
@@ -47,8 +50,11 @@ export default function StreamGrid({ selectedGame: propSelectedGame }: StreamGri
       ? typeFilteredStreams.filter((s) => s.type !== "tournament")
       : typeFilteredStreams;
 
-  const showPinnedSection = (selectedType === "all" || selectedType === "tournament") && pinnedTournaments.length > 0;
-  const showAllStreamsSection = (selectedType === "all" && allOtherStreams.length > 0) || (selectedType !== "all" && selectedType !== "tournament" && typeFilteredStreams.length > 0);
+  const showPinnedSection =
+    (selectedType === "all" || selectedType === "tournament") && pinnedTournaments.length > 0;
+  const showAllStreamsSection =
+    (selectedType === "all" && allOtherStreams.length > 0) ||
+    (selectedType !== "all" && selectedType !== "tournament" && typeFilteredStreams.length > 0);
 
   return (
     <section className="flex flex-col gap-6">
@@ -57,13 +63,15 @@ export default function StreamGrid({ selectedGame: propSelectedGame }: StreamGri
         {/* Title with Icon */}
         <div className="flex items-center gap-2.5">
           <TrendingUp aria-hidden="true" className="h-5 w-5 text-accent" />
-          <h2 className="font-serif text-2xl font-bold tracking-tight text-white">
-            Live Streams
-          </h2>
+          <h2 className="font-serif text-2xl font-bold tracking-tight text-white">Live Streams</h2>
         </div>
 
         {/* Stream Type Filter Pills */}
-        <div role="group" aria-label="Stream type filters" className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
+        <div
+          role="group"
+          aria-label="Stream type filters"
+          className="flex scrollbar-none items-center gap-2 overflow-x-auto py-1"
+        >
           {STREAM_TYPE_FILTERS.map((filter) => {
             const isSelected = selectedType === filter.id;
             return (
@@ -75,7 +83,7 @@ export default function StreamGrid({ selectedGame: propSelectedGame }: StreamGri
                 className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all duration-150 ${
                   isSelected
                     ? "bg-accent text-black shadow-sm"
-                    : "bg-[#181814] text-[#a0a095] hover:bg-[#22221c] hover:text-white border border-[#2a2a22]"
+                    : "border border-[#2a2a22] bg-[#181814] text-[#a0a095] hover:bg-[#22221c] hover:text-white"
                 }`}
               >
                 {filter.label}
@@ -89,8 +97,8 @@ export default function StreamGrid({ selectedGame: propSelectedGame }: StreamGri
       {showPinnedSection && (
         <div className="flex flex-col gap-4">
           {/* Section Separator */}
-          <div className="flex items-center gap-3 my-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/50 bg-[#161611] px-3.5 py-1 text-xs font-extrabold text-accent uppercase tracking-wider shadow-sm">
+          <div className="my-2 flex items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/50 bg-[#161611] px-3.5 py-1 text-xs font-extrabold tracking-wider text-accent uppercase shadow-sm">
               <Trophy aria-hidden="true" className="h-3.5 w-3.5" /> PINNED TOURNAMENTS
             </span>
             <div className="h-px flex-1 bg-[#24241d]" />
@@ -109,8 +117,8 @@ export default function StreamGrid({ selectedGame: propSelectedGame }: StreamGri
       {showAllStreamsSection && (
         <div className="flex flex-col gap-4">
           {/* Section Separator */}
-          <div className="flex items-center gap-3 my-2">
-            <span className="text-xs font-extrabold uppercase tracking-widest text-[#757568]">
+          <div className="my-2 flex items-center gap-3">
+            <span className="text-xs font-extrabold tracking-widest text-[#757568] uppercase">
               ALL STREAMS
             </span>
             <div className="h-px flex-1 bg-[#24241d]" />
@@ -127,9 +135,9 @@ export default function StreamGrid({ selectedGame: propSelectedGame }: StreamGri
 
       {/* Empty State */}
       {!showPinnedSection && !showAllStreamsSection && (
-        <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed border-[#262620] rounded-2xl bg-[#12120f]/50">
-          <p className="text-base font-semibold">No live streams found</p>
-          <p className="text-xs text-[#8a8a7c] mt-1">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#262620] bg-[#12120f]/50 py-16 text-center">
+          <p className="font-semibold text-base">No live streams found</p>
+          <p className="mt-1 text-xs text-[#8a8a7c]">
             Try selecting a different game or stream type filter above.
           </p>
         </div>

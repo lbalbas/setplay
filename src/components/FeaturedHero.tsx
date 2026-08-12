@@ -18,14 +18,14 @@ export default function FeaturedHero() {
             aria-label="Play headline stream"
             className="flex h-16 w-16 items-center justify-center rounded-full border border-accent/30 bg-black/60 text-accent backdrop-blur-sm transition-all duration-200 hover:scale-110 hover:border-accent hover:bg-accent/10"
           >
-            <Play aria-hidden="true" className="h-7 w-7 fill-current translate-x-0.5" />
+            <Play aria-hidden="true" className="h-7 w-7 translate-x-0.5 fill-current" />
           </button>
         </div>
 
         {/* Live badge — bottom left */}
         <div className="absolute bottom-3 left-3">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-accent backdrop-blur-sm">
-            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-bold tracking-wider text-accent uppercase backdrop-blur-sm">
+            <span aria-hidden="true" className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
             LIVE · {(stream.viewerCount / 1000).toFixed(1)}K watching
           </span>
         </div>
@@ -36,13 +36,13 @@ export default function FeaturedHero() {
         {/* Top Section */}
         <div className="flex flex-col gap-4">
           {/* Headline Badge */}
-          <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-accent/25 bg-accent/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-accent">
+          <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-accent/25 bg-accent/10 px-3 py-1 text-[11px] font-bold tracking-wider text-accent uppercase">
             <Trophy aria-hidden="true" className="h-3 w-3" />
             Headline Event
           </span>
 
           {/* Title */}
-          <h1 className="font-serif text-2xl font-bold leading-tight text-copy-primary lg:text-3xl">
+          <h1 className="font-serif text-2xl leading-tight font-bold text-copy-primary lg:text-3xl">
             {stream.featuredTitle}
           </h1>
 
@@ -69,9 +69,7 @@ export default function FeaturedHero() {
             ["Prize Pool", stream.prizePool],
           ].map(([label, value]) => (
             <div key={label} className="flex flex-col items-center gap-1 px-3 first:pl-0 last:pr-0">
-              <dt className="text-[10px] uppercase tracking-widest text-copy-secondary">
-                {label}
-              </dt>
+              <dt className="text-[10px] tracking-widest text-copy-secondary uppercase">{label}</dt>
               <dd className="text-lg font-bold text-copy-primary">{value}</dd>
             </div>
           ))}
