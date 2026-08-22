@@ -1,5 +1,11 @@
 import { type Game, type Event } from "../server/db/schema";
 
+/**
+ * Enriched event type returned by the repository layer after joining
+ * event_games → games. Not stored in the DB; assembled at query time.
+ */
+export type EventWithGames = Event & { games: Game[] };
+
 export interface MockStream {
   id: string;
   channelName: string;
@@ -63,11 +69,13 @@ export const MOCK_GAMES: Game[] = [
   },
 ];
 
-// 2. Mock Events (Matching the database schema)
-export const MOCK_EVENTS: Event[] = [
+// 2. Mock Events (as returned by the repository layer — Event + joined games)
+export const MOCK_EVENTS: EventWithGames[] = [
   {
     id: "evo-2026",
     name: "EVO 2026",
+    description:
+      "The world's premier fighting game tournament championship held annually in Las Vegas, featuring open brackets and world-class competition.",
     slug: "evo-2026",
     source: "start_gg",
     startggSlug: "tournament/evo-2026",
@@ -75,13 +83,28 @@ export const MOCK_EVENTS: Event[] = [
     endDate: new Date("2026-07-13T23:59:59Z"),
     region: "NA",
     isOnline: false,
+    location: "Las Vegas, NV",
     registrationUrl: "https://start.gg/tournament/evo-2026",
+    imageUrl: null,
+    prizePool: 250000,
+    attendeeCount: 8500,
     featuredPriority: "headline",
     status: "live",
+    // EVO is the largest open event — all tracked games are featured
+    games: [
+      { id: "518605",    name: "Street Fighter 6",                   slug: "sf6",  startggId: 43868 },
+      { id: "1811568203",name: "Tekken 8",                           slug: "t8",   startggId: 49783 },
+      { id: "2085304958",name: "Guilty Gear -Strive-",               slug: "ggst", startggId: 33990 },
+      { id: "497385",    name: "Dragon Ball FighterZ",               slug: "dbfz", startggId: 10    },
+      { id: "973167198", name: "Under Night In-Birth II Sys:Celes",  slug: "uni2", startggId: 50821 },
+      { id: "16260",     name: "Super Smash Bros. Melee",            slug: "ssbm", startggId: 1     },
+    ],
   },
   {
     id: "combo-breaker-2026",
     name: "Combo Breaker 2026",
+    description:
+      "A premier fighting game convention and tournament weekend hosted over Memorial Day weekend in the Chicago area.",
     slug: "combo-breaker-2026",
     source: "start_gg",
     startggSlug: "tournament/combo-breaker-2026",
@@ -89,13 +112,24 @@ export const MOCK_EVENTS: Event[] = [
     endDate: new Date("2026-07-27T23:59:59Z"),
     region: "NA",
     isOnline: false,
+    location: "Chicago, IL",
     registrationUrl: "https://start.gg/tournament/combo-breaker-2026",
+    imageUrl: null,
+    prizePool: 50000,
+    attendeeCount: 3200,
     featuredPriority: "featured",
     status: "upcoming",
+    games: [
+      { id: "518605",    name: "Street Fighter 6",                   slug: "sf6",  startggId: 43868 },
+      { id: "1811568203",name: "Tekken 8",                           slug: "t8",   startggId: 49783 },
+      { id: "2085304958",name: "Guilty Gear -Strive-",               slug: "ggst", startggId: 33990 },
+      { id: "16260",     name: "Super Smash Bros. Melee",            slug: "ssbm", startggId: 1     },
+    ],
   },
   {
     id: "ceo-2026",
     name: "CEO 2026",
+    description: null,
     slug: "ceo-2026",
     source: "manual",
     startggSlug: null,
@@ -103,9 +137,18 @@ export const MOCK_EVENTS: Event[] = [
     endDate: new Date("2026-07-28T23:59:59Z"),
     region: "NA",
     isOnline: false,
+    location: "Daytona Beach, FL",
     registrationUrl: "https://ceogaming.org",
+    imageUrl: null,
+    prizePool: 30000,
+    attendeeCount: 2000,
     featuredPriority: "normal",
     status: "upcoming",
+    games: [
+      { id: "518605",    name: "Street Fighter 6",      slug: "sf6",  startggId: 43868 },
+      { id: "1811568203",name: "Tekken 8",              slug: "t8",   startggId: 49783 },
+      { id: "497385",    name: "Dragon Ball FighterZ",  slug: "dbfz", startggId: 10    },
+    ],
   },
 ];
 

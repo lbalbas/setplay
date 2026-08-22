@@ -13,8 +13,8 @@ import {
 export const Route = createFileRoute("/events")({ component: EventPage });
 
 function EventPage() {
-  const liveEvents = 0;
-  const upcomingEvents = 3;
+  const liveEvents = MOCK_EVENTS.filter((event) => event.status === "live").length;
+  const upcomingEvents = MOCK_EVENTS.filter((event) => event.status === "upcoming").length;
 
   return (
     <main>
@@ -151,27 +151,17 @@ function EventPage() {
                   )}
                 </div>
                 <div className="font-serif text-2xl text-copy-primary">{event.name}</div>
-                <p className="text-sm text-copy-secondary">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit
-                  amet, consectetur adipiscing elit.
-                </p>
+                <p className="text-sm text-copy-secondary">{event.description ?? ""}</p>
                 <div className="flex flex-wrap gap-1">
-                  {MOCK_GAMES.map((game) => {
-                    //Iterate through mock game array and render games at random as placeholder
-                    let shouldRender = Math.random() < 0.5;
-
-                    if (shouldRender) {
-                      return (
-                        <span
-                          key={game.name}
-                          className="mt-1 rounded-xl bg-elevated px-2 py-1 text-xs text-copy-secondary"
-                        >
-                          {game.name}
-                        </span>
-                      );
-                    }
-
-                    return null;
+                  {event.games.map((game) => {
+                    return (
+                      <span
+                        key={game.name}
+                        className="mt-1 rounded-xl bg-elevated px-2 py-1 text-xs text-copy-secondary"
+                      >
+                        {game.name}
+                      </span>
+                    );
                   })}
                 </div>
               </div>
@@ -185,13 +175,17 @@ function EventPage() {
                   }).formatRange(event.startDate, event.endDate)}
                 </span>
                 <span className="flex items-center text-xs text-copy-secondary">
-                  <MapPin aria-hidden="true" className="h-3" /> Location
+                  <MapPin aria-hidden="true" className="h-3" />{" "}
+                  {event.isOnline ? "Online" : (event.location ?? "")}
                 </span>
                 <span className="flex items-center text-xs text-copy-secondary">
-                  <UsersRound aria-hidden="true" className="h-3" /> Attendees
+                  <UsersRound aria-hidden="true" className="h-3" />
+                  {event.attendeeCount ? event.attendeeCount.toLocaleString() : ""}
                 </span>
                 <div className="flex flex-col items-end pt-2">
-                  <span className="font-serif text-lg font-bold text-copy-primary">$XXX,XXX</span>
+                  <span className="font-serif text-lg font-bold text-copy-primary">
+                    {event.prizePool ? `$${event.prizePool.toLocaleString()}` : ""}
+                  </span>
                   <span className="text-xs text-copy-secondary">prize pool</span>
                 </div>
                 <div className="mt-2 flex items-center justify-end gap-2">

@@ -19,6 +19,7 @@ export const games = sqliteTable("games", {
 export const events = sqliteTable("events", {
   id: text("id").primaryKey(), // UUID or start.gg slug-based ID
   name: text("name").notNull(),
+  description: text("description"),
   slug: text("slug").notNull().unique(),
   source: text("source", { enum: ["start_gg", "manual"] }).notNull(),
   startggSlug: text("startgg_slug"), // e.g. "tournament/combo-breaker-2026"
@@ -26,7 +27,13 @@ export const events = sqliteTable("events", {
   endDate: integer("end_date", { mode: "timestamp" }).notNull(),
   region: text("region"), // e.g. "NA", "EU", "JP"
   isOnline: integer("is_online", { mode: "boolean" }).notNull().default(false),
+  location: text("location"), // Venue/city string; null for online events
   registrationUrl: text("registration_url"),
+  imageUrl: text("image_url"), // Tournament banner/logo URL
+  prizePool: integer("prize_pool"), // Total prize pool in USD; null if not applicable
+  // Note: per-game prize pools are deferred to a later phase
+  attendeeCount: integer("attendee_count"), // Registered competitors; null if unknown
+  // Note: represents competing participants, not total spectators/attendees
   featuredPriority: text("featured_priority", {
     enum: ["normal", "featured", "headline"],
   })
