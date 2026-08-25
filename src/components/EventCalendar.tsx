@@ -150,7 +150,10 @@ export default function EventCalendar() {
             )}
           </div>
 
-          <Link to="/" className="mt-4 inline-block text-xs font-bold text-accent hover:underline">
+          <Link
+            to="/events"
+            className="mt-4 inline-block text-xs font-bold text-accent hover:underline"
+          >
             Show more
           </Link>
         </div>

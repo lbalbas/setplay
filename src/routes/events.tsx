@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { MOCK_EVENTS, MOCK_GAMES } from "#/mocks/data";
+import { MOCK_EVENTS } from "#/mocks/data";
 import {
   Funnel,
   MapPin,
@@ -50,7 +50,7 @@ function EventPage() {
           </div>
         </div>
       </div>
-      <div className="mx-auto w-10/12 max-w-7xl py-8">
+      <div className="max-w-8xl mx-auto w-11/12 py-8">
         <div className="flex w-full gap-8 rounded-lg border border-accent-glow bg-surface px-6 py-4 text-copy-secondary">
           <span className="flex items-center text-sm text-copy-secondary uppercase">
             <Funnel aria-hidden="true" className="h-4" />
@@ -113,7 +113,7 @@ function EventPage() {
             </div>
           </div>
         </div>
-        <div className="mx-auto flex w-10/12 flex-col gap-4 py-8">
+        <div className="mx-auto flex w-11/12 flex-col gap-4 py-8">
           {MOCK_EVENTS.map((event) => (
             <div
               key={event.id}
