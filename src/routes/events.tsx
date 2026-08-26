@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { MOCK_EVENTS } from "#/mocks/data";
 import {
@@ -9,12 +10,27 @@ import {
   Trophy,
   SquareArrowOutUpRight,
 } from "lucide-react";
+import { useGameFilter } from "#/context/GameFilterContext";
 
 export const Route = createFileRoute("/events")({ component: EventPage });
 
 function EventPage() {
+  const [presentialEventFilter, setPresentialEventFilter] = useState<boolean | "all">("all");
+  const [statusEventFilter, setStatusEventFilter] = useState("all");
+  const { selectedGame: contextSelectedGame } = useGameFilter();
+  const selectedGame = contextSelectedGame;
+
   const liveEvents = MOCK_EVENTS.filter((event) => event.status === "live").length;
   const upcomingEvents = MOCK_EVENTS.filter((event) => event.status === "upcoming").length;
+
+  const filteredEvents = MOCK_EVENTS.filter((event) => {
+    const matchesGame =
+      selectedGame === "all" || event.games.some((game) => game.id === selectedGame);
+    const matchesStatus = statusEventFilter === "all" || event.status === statusEventFilter;
+    const matchesLocation =
+      presentialEventFilter === "all" || event.isOnline === presentialEventFilter;
+    return matchesGame && matchesStatus && matchesLocation;
+  });
 
   return (
     <main>
@@ -60,24 +76,27 @@ function EventPage() {
             <div
               role="group"
               aria-label="Event location filters"
-              className="flex items-center gap-2 border-r border-accent-glow text-sm"
+              className="flex items-center gap-2 border-r border-accent-glow pr-6 text-sm"
             >
               <button
                 type="button"
-                className="rounded-xl bg-elevated px-3 py-1 transition-colors hover:text-copy-primary"
+                className={`cursor-pointer rounded-xl px-3 py-1 transition-colors ${presentialEventFilter === "all" ? "bg-accent font-bold text-base" : "bg-elevated hover:text-copy-primary"}`}
+                onClick={() => setPresentialEventFilter("all")}
               >
                 All
               </button>
               <button
                 type="button"
-                className="flex items-center rounded-xl bg-elevated px-3 py-1 transition-colors hover:text-copy-primary"
+                className={`flex cursor-pointer items-center rounded-xl px-3 py-1 transition-colors ${presentialEventFilter === true ? "bg-accent font-bold text-base" : "bg-elevated hover:text-copy-primary"}`}
+                onClick={() => setPresentialEventFilter(true)}
               >
                 <Wifi aria-hidden="true" className="h-3" />
                 <span className="ml-1">Online</span>
               </button>
               <button
                 type="button"
-                className="flex items-center rounded-xl bg-elevated px-3 py-1 transition-colors hover:text-copy-primary"
+                className={`flex cursor-pointer items-center rounded-xl px-3 py-1 transition-colors ${presentialEventFilter === false ? "bg-accent font-bold text-base" : "bg-elevated hover:text-copy-primary"}`}
+                onClick={() => setPresentialEventFilter(false)}
               >
                 <MapPin aria-hidden="true" className="h-3" />
                 <span className="ml-1">Offline</span>
@@ -87,25 +106,29 @@ function EventPage() {
               <div className="flex items-center gap-2 text-sm">
                 <button
                   type="button"
-                  className="rounded-xl px-3 py-1 transition-colors hover:text-copy-primary"
+                  className={`cursor-pointer rounded-xl px-3 py-1 transition-colors ${statusEventFilter === "all" ? "bg-elevated font-bold text-copy-primary" : ""}`}
+                  onClick={() => setStatusEventFilter("all")}
                 >
                   All Status
                 </button>
                 <button
                   type="button"
-                  className="rounded-xl px-3 py-1 transition-colors hover:text-copy-primary"
+                  className={`cursor-pointer rounded-xl px-3 py-1 transition-colors ${statusEventFilter === "live" ? "bg-elevated font-bold text-copy-primary" : ""}`}
+                  onClick={() => setStatusEventFilter("live")}
                 >
                   Ongoing
                 </button>
                 <button
                   type="button"
-                  className="rounded-xl px-3 py-1 transition-colors hover:text-copy-primary"
+                  className={`cursor-pointer rounded-xl px-3 py-1 transition-colors ${statusEventFilter === "upcoming" ? "bg-elevated font-bold text-copy-primary" : ""}`}
+                  onClick={() => setStatusEventFilter("upcoming")}
                 >
                   Upcoming
                 </button>
                 <button
                   type="button"
-                  className="rounded-xl px-3 py-1 transition-colors hover:text-copy-primary"
+                  className={`rounded-xl px-3 py-1 transition-colors ${statusEventFilter === "completed" ? "bg-elevated font-bold text-copy-primary" : ""}`}
+                  onClick={() => setStatusEventFilter("completed")}
                 >
                   Completed
                 </button>
@@ -114,94 +137,124 @@ function EventPage() {
           </div>
         </div>
         <div className="mx-auto flex w-11/12 flex-col gap-4 py-8">
-          {MOCK_EVENTS.map((event) => (
-            <div
-              key={event.id}
-              className="relative flex w-full justify-between overflow-hidden rounded-lg border border-accent-glow bg-surface p-8"
-            >
-              <div
-                className={`absolute top-0 bottom-0 left-0 w-1 ${
-                  event.status === "live" ? "bg-accent" : "bg-copy-secondary"
-                }`}
-              />
-              <div className="flex w-1/2 flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  {event.status === "live" ? (
-                    <span className="inline-flex items-center gap-1 rounded border border-accent/20 bg-accent/10 px-2 py-0.5 text-[10px] font-extrabold tracking-wider text-accent uppercase shadow-[0_0_8px_rgba(255,242,130,0.15),_0_0_20px_rgba(255,242,130,0.08)]">
-                      <span className="h-1 w-1 animate-pulse rounded-full bg-accent shadow-[0_0_4px_#FFF282]" />
-                      Live Now
-                    </span>
-                  ) : event.status === "upcoming" ? (
-                    <span className="inline-flex items-center gap-1 rounded border border-line bg-elevated px-2 py-0.5 text-[10px] font-bold tracking-wider text-copy-secondary uppercase">
-                      Upcoming
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 rounded border border-line/40 bg-[#161613] px-2 py-0.5 text-[10px] font-medium tracking-wider text-copy-secondary/50 uppercase">
-                      Completed
-                    </span>
-                  )}
-                  {event.isOnline ? (
-                    <span className="flex items-center text-xs text-copy-secondary">
-                      <Wifi aria-hidden="true" className="h-3" /> Online
-                    </span>
-                  ) : (
-                    <span className="flex items-center text-xs  text-copy-secondary">
-                      <MapPin aria-hidden="true" className="h-3" /> Offline
-                    </span>
-                  )}
-                </div>
-                <div className="font-serif text-2xl text-copy-primary">{event.name}</div>
-                <p className="text-sm text-copy-secondary">{event.description ?? ""}</p>
-                <div className="flex flex-wrap gap-1">
-                  {event.games.map((game) => {
-                    return (
-                      <span
-                        key={game.name}
-                        className="mt-1 rounded-xl bg-elevated px-2 py-1 text-xs text-copy-secondary"
-                      >
-                        {game.name}
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-              <div className="flex w-1/2 flex-col items-end gap-2">
-                <span className="flex items-center text-sm font-bold text-copy-primary">
-                  <Calendar aria-hidden="true" className="h-3" />
-                  {new Intl.DateTimeFormat("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  }).formatRange(event.startDate, event.endDate)}
-                </span>
-                <span className="flex items-center text-xs text-copy-secondary">
-                  <MapPin aria-hidden="true" className="h-3" />{" "}
-                  {event.isOnline ? "Online" : (event.location ?? "")}
-                </span>
-                <span className="flex items-center text-xs text-copy-secondary">
-                  <UsersRound aria-hidden="true" className="h-3" />
-                  {event.attendeeCount ? event.attendeeCount.toLocaleString() : ""}
-                </span>
-                <div className="flex flex-col items-end pt-2">
-                  <span className="font-serif text-lg font-bold text-copy-primary">
-                    {event.prizePool ? `$${event.prizePool.toLocaleString()}` : ""}
-                  </span>
-                  <span className="text-xs text-copy-secondary">prize pool</span>
-                </div>
-                <div className="mt-2 flex items-center justify-end gap-2">
-                  {event.status === "live" && (
-                    <button className="cursor-pointer rounded-2xl bg-accent px-3 py-2 text-xs font-bold">
-                      {"Watch Now >"}
-                    </button>
-                  )}
-                  <button className="flex cursor-pointer items-center rounded-2xl bg-elevated py-2 pr-2 pl-4 text-xs font-bold text-copy-secondary">
-                    Bracket
-                    <SquareArrowOutUpRight aria-hidden="true" className="h-3" />
-                  </button>
-                </div>
-              </div>
+          {filteredEvents.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-lg border border-accent-glow bg-surface px-6 py-16 text-center">
+              <Calendar aria-hidden="true" className="mb-3 h-10 w-10 text-copy-secondary/40" />
+              <h3 className="font-serif text-xl font-bold text-copy-primary">No events found</h3>
+              <p className="mt-1 max-w-sm text-sm text-copy-secondary">
+                No events match your current filter settings. Try selecting a different game,
+                status, or format.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setPresentialEventFilter("all");
+                  setStatusEventFilter("all");
+                }}
+                className="mt-4 cursor-pointer rounded-xl bg-elevated px-4 py-2 text-xs font-bold text-copy-primary transition-colors hover:bg-accent hover:text-black"
+              >
+                Clear Filters
+              </button>
             </div>
-          ))}
+          ) : (
+            filteredEvents.map((event) => {
+              let shouldRender =
+                (selectedGame === "all" ||
+                  event.games.map((game) => game.id).includes(selectedGame)) &&
+                (statusEventFilter === "all" || event.status === statusEventFilter) &&
+                (presentialEventFilter === "all" || event.isOnline === presentialEventFilter);
+
+              return !shouldRender ? null : (
+                <div
+                  key={event.id}
+                  className="relative flex w-full justify-between overflow-hidden rounded-lg border border-accent-glow bg-surface p-8"
+                >
+                  <div
+                    className={`absolute top-0 bottom-0 left-0 w-1 ${
+                      event.status === "live" ? "bg-accent" : "bg-copy-secondary"
+                    }`}
+                  />
+                  <div className="flex w-1/2 flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      {event.status === "live" ? (
+                        <span className="inline-flex items-center gap-1 rounded border border-accent/20 bg-accent/10 px-2 py-0.5 text-[10px] font-extrabold tracking-wider text-accent uppercase shadow-[0_0_8px_rgba(255,242,130,0.15),0_0_20px_rgba(255,242,130,0.08)]">
+                          <span className="h-1 w-1 animate-pulse rounded-full bg-accent shadow-[0_0_4px_#FFF282]" />
+                          Live Now
+                        </span>
+                      ) : event.status === "upcoming" ? (
+                        <span className="inline-flex items-center gap-1 rounded border border-line bg-elevated px-2 py-0.5 text-[10px] font-bold tracking-wider text-copy-secondary uppercase">
+                          Upcoming
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded border border-line/40 bg-[#161613] px-2 py-0.5 text-[10px] font-medium tracking-wider text-copy-secondary/50 uppercase">
+                          Completed
+                        </span>
+                      )}
+                      {event.isOnline ? (
+                        <span className="flex items-center text-xs text-copy-secondary">
+                          <Wifi aria-hidden="true" className="h-3" /> Online
+                        </span>
+                      ) : (
+                        <span className="flex items-center text-xs  text-copy-secondary">
+                          <MapPin aria-hidden="true" className="h-3" /> Offline
+                        </span>
+                      )}
+                    </div>
+                    <div className="font-serif text-2xl text-copy-primary">{event.name}</div>
+                    <p className="text-sm text-copy-secondary">{event.description ?? ""}</p>
+                    <div className="flex flex-wrap gap-1">
+                      {event.games.map((game) => {
+                        return (
+                          <span
+                            key={game.name}
+                            className="mt-1 rounded-xl bg-elevated px-2 py-1 text-xs text-copy-secondary"
+                          >
+                            {game.name}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="flex w-1/2 flex-col items-end gap-2">
+                    <span className="flex items-center text-sm font-bold text-copy-primary">
+                      <Calendar aria-hidden="true" className="h-3" />
+                      {new Intl.DateTimeFormat("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      }).formatRange(event.startDate, event.endDate)}
+                    </span>
+                    <span className="flex items-center text-xs text-copy-secondary">
+                      <MapPin aria-hidden="true" className="h-3" />{" "}
+                      {event.isOnline ? "Online" : (event.location ?? "")}
+                    </span>
+                    <span className="flex items-center text-xs text-copy-secondary">
+                      <UsersRound aria-hidden="true" className="h-3" />
+                      {event.attendeeCount ? event.attendeeCount.toLocaleString() : ""}
+                    </span>
+                    <div className="flex flex-col items-end pt-2">
+                      <span className="font-serif text-lg font-bold text-copy-primary">
+                        {event.prizePool ? `$${event.prizePool.toLocaleString()}` : ""}
+                      </span>
+                      <span className="text-xs text-copy-secondary">prize pool</span>
+                    </div>
+                    <div className="mt-2 flex items-center justify-end gap-2">
+                      {event.status === "live" && (
+                        <button className="cursor-pointer rounded-2xl bg-accent px-3 py-2 text-xs font-bold">
+                          {"Watch Now >"}
+                        </button>
+                      )}
+                      <button className="flex cursor-pointer items-center rounded-2xl bg-elevated py-2 pr-2 pl-4 text-xs font-bold text-copy-secondary">
+                        Bracket
+                        <SquareArrowOutUpRight aria-hidden="true" className="h-3" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </main>
