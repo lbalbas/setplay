@@ -119,7 +119,7 @@ export default function Header({
               Events
             </Link>
             <Link
-              to="/"
+              to="/admin"
               className={`relative py-1 transition-colors ${
                 currentPath.startsWith("/admin")
                   ? "font-bold text-copy-primary after:absolute after:right-0 after:bottom-0 after:left-0 after:h-0.5 after:bg-accent"
