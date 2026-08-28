@@ -12,6 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as EventsRouteImport } from './routes/events'
+import { Route as WatchRouteImport } from './routes/watch'
+import { Route as WatchIndexRouteImport } from './routes/watch.index'
+import { Route as WatchStreamNameRouteImport } from './routes/watch.$streamName'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,35 +31,72 @@ const EventsRoute = EventsRouteImport.update({
   path: '/events',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WatchRoute = WatchRouteImport.update({
+  id: '/watch',
+  path: '/watch',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WatchIndexRoute = WatchIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => WatchRoute,
+} as any)
+const WatchStreamNameRoute = WatchStreamNameRouteImport.update({
+  id: '/$streamName',
+  path: '/$streamName',
+  getParentRoute: () => WatchRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/events': typeof EventsRoute
+  '/watch': typeof WatchRouteWithChildren
+  '/watch/$streamName': typeof WatchStreamNameRoute
+  '/watch/': typeof WatchIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/events': typeof EventsRoute
+  '/watch/$streamName': typeof WatchStreamNameRoute
+  '/watch': typeof WatchIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/events': typeof EventsRoute
+  '/watch': typeof WatchRouteWithChildren
+  '/watch/$streamName': typeof WatchStreamNameRoute
+  '/watch/': typeof WatchIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/events'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/events'
+    | '/watch'
+    | '/watch/$streamName'
+    | '/watch/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/events'
-  id: '__root__' | '/' | '/admin' | '/events'
+  to: '/' | '/admin' | '/events' | '/watch/$streamName' | '/watch'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/events'
+    | '/watch'
+    | '/watch/$streamName'
+    | '/watch/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   EventsRoute: typeof EventsRoute
+  WatchRoute: typeof WatchRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -82,13 +122,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/watch': {
+      id: '/watch'
+      path: '/watch'
+      fullPath: '/watch'
+      preLoaderRoute: typeof WatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/watch/': {
+      id: '/watch/'
+      path: '/'
+      fullPath: '/watch/'
+      preLoaderRoute: typeof WatchIndexRouteImport
+      parentRoute: typeof WatchRoute
+    }
+    '/watch/$streamName': {
+      id: '/watch/$streamName'
+      path: '/$streamName'
+      fullPath: '/watch/$streamName'
+      preLoaderRoute: typeof WatchStreamNameRouteImport
+      parentRoute: typeof WatchRoute
+    }
   }
 }
+
+interface WatchRouteChildren {
+  WatchStreamNameRoute: typeof WatchStreamNameRoute
+  WatchIndexRoute: typeof WatchIndexRoute
+}
+
+const WatchRouteChildren: WatchRouteChildren = {
+  WatchStreamNameRoute: WatchStreamNameRoute,
+  WatchIndexRoute: WatchIndexRoute,
+}
+
+const WatchRouteWithChildren = WatchRoute._addFileChildren(WatchRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   EventsRoute: EventsRoute,
+  WatchRoute: WatchRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

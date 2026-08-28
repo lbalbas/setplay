@@ -1,5 +1,6 @@
 import { type MockStream } from "#/mocks/data";
 import { Play, Trophy } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 interface StreamCardProps {
   stream: MockStream;
@@ -69,13 +70,15 @@ export default function StreamCard({ stream, onClick }: StreamCardProps) {
       </div>
 
       <div className="px-4 pt-0 pb-4">
-        <button
-          type="button"
-          className="flex w-full items-center justify-center gap-1.5 rounded-full border border-line bg-surface py-2 text-xs font-bold text-copy-secondary transition-all duration-200 group-hover:border-accent group-hover:bg-accent/10 group-hover:text-accent"
-        >
-          <Play className="h-3 w-3 fill-current" />
-          WATCH NOW
-        </button>
+        <Link to={`/watch/${stream.id}`}>
+          <button
+            type="button"
+            className="flex w-full items-center justify-center gap-1.5 rounded-full border border-line bg-surface py-2 text-xs font-bold text-copy-secondary transition-all duration-200 group-hover:border-accent group-hover:bg-accent/10 group-hover:text-accent"
+          >
+            <Play className="h-3 w-3 fill-current" />
+            WATCH NOW
+          </button>
+        </Link>
       </div>
     </article>
   );
