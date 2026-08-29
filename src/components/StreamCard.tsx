@@ -18,7 +18,7 @@ export default function StreamCard({ stream, onClick }: StreamCardProps) {
   return (
     <article
       onClick={onClick}
-      className="group flex cursor-pointer flex-col justify-between overflow-hidden rounded-xl border border-line bg-surface transition-all duration-300 hover:-translate-y-1 hover:border-accent hover:shadow-[0_8px_30px_rgba(255,242,130,0.06)]"
+      className="group flex flex-col justify-between overflow-hidden rounded-xl border border-line bg-surface transition-all duration-300 hover:-translate-y-1 hover:border-accent hover:shadow-[0_8px_30px_rgba(255,242,130,0.06)]"
     >
       {/* Thumbnail Container */}
       <div className="relative aspect-video w-full overflow-hidden bg-base">
@@ -70,10 +70,10 @@ export default function StreamCard({ stream, onClick }: StreamCardProps) {
       </div>
 
       <div className="px-4 pt-0 pb-4">
-        <Link to={`/watch/${stream.id}`}>
+        <Link to="/watch/$streamName" params={{ streamName: stream.id }}>
           <button
             type="button"
-            className="flex w-full items-center justify-center gap-1.5 rounded-full border border-line bg-surface py-2 text-xs font-bold text-copy-secondary transition-all duration-200 group-hover:border-accent group-hover:bg-accent/10 group-hover:text-accent"
+            className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border border-line bg-surface py-2 text-xs font-bold text-copy-secondary transition-all duration-200 group-hover:border-accent group-hover:bg-accent/10 group-hover:text-accent"
           >
             <Play className="h-3 w-3 fill-current" />
             WATCH NOW

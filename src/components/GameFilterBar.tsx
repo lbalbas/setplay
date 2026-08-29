@@ -1,16 +1,13 @@
 import { MOCK_GAMES } from "#/mocks/data";
+import { useGameFilter } from "#/context/GameFilterContext";
 
 interface GameFilterBarProps {
-  selectedGame: string;
-  onSelectGame: (gameId: string) => void;
   games?: typeof MOCK_GAMES;
 }
 
-export default function GameFilterBar({
-  selectedGame,
-  onSelectGame,
-  games = MOCK_GAMES,
-}: GameFilterBarProps) {
+export default function GameFilterBar({ games = MOCK_GAMES }: GameFilterBarProps) {
+  const { selectedGame, setSelectedGame } = useGameFilter();
+
   return (
     <div
       role="group"
@@ -20,7 +17,7 @@ export default function GameFilterBar({
       {/* "All" Pill */}
       <button
         type="button"
-        onClick={() => onSelectGame("all")}
+        onClick={() => setSelectedGame("all")}
         aria-pressed={selectedGame === "all"}
         className={`shrink-0 rounded-full px-3.5 py-1 text-xs font-semibold transition-colors duration-150 ${
           selectedGame === "all"
@@ -38,7 +35,7 @@ export default function GameFilterBar({
           <button
             key={game.id}
             type="button"
-            onClick={() => onSelectGame(game.id)}
+            onClick={() => setSelectedGame(game.id)}
             aria-pressed={isSelected}
             className={`shrink-0 rounded-full px-3.5 py-1 text-xs font-medium transition-colors duration-150 ${
               isSelected

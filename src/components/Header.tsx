@@ -1,24 +1,9 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { Bell, Search, Shield, Zap } from "lucide-react";
 import GameFilterBar from "./GameFilterBar";
-import { useGameFilter } from "#/context/GameFilterContext";
-
-interface HeaderProps {
-  selectedGame?: string;
-  onSelectGame?: (gameId: string) => void;
-}
-
-export default function Header({
-  selectedGame: propSelectedGame,
-  onSelectGame: propOnSelectGame,
-}: HeaderProps) {
+export default function Header() {
   const location = useLocation();
   const currentPath = location?.pathname || "/";
-  const { selectedGame: contextSelectedGame, setSelectedGame: contextSetSelectedGame } =
-    useGameFilter();
-
-  const selectedGame = propSelectedGame ?? contextSelectedGame;
-  const handleSelectGame = propOnSelectGame ?? contextSetSelectedGame;
 
   return (
     <header className="sticky top-0 z-50 border-b bg-elevated/95 backdrop-blur-md">
@@ -93,7 +78,7 @@ export default function Header({
         <div className="mx-auto flex w-11/12 max-w-screen-2xl items-center justify-between py-2">
           {/* Game Filter Bar */}
           <div className="mr-4 min-w-0 flex-1">
-            <GameFilterBar selectedGame={selectedGame} onSelectGame={handleSelectGame} />
+            <GameFilterBar />
           </div>
 
           {/* Nav Links (Right Side) */}

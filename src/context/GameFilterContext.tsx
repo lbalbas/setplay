@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 interface GameFilterContextType {
   selectedGame: string;
@@ -13,8 +13,17 @@ const GameFilterContext = createContext<GameFilterContextType>({
 export function GameFilterProvider({ children }: { children: ReactNode }) {
   const [selectedGame, setSelectedGame] = useState<string>("all");
 
+  const handleSetGame = (gameId: string) => {
+    setSelectedGame(gameId);
+    localStorage.setItem("setplay_game_filter", gameId);
+  };
+
+  useEffect(() => {
+    setSelectedGame(localStorage.getItem("setplay_game_filter") || "all");
+  }, []);
+  
   return (
-    <GameFilterContext.Provider value={{ selectedGame, setSelectedGame }}>
+    <GameFilterContext.Provider value={{ selectedGame, setSelectedGame: handleSetGame }}>
       {children}
     </GameFilterContext.Provider>
   );
