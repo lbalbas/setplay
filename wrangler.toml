@@ -6,7 +6,8 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "setplay-db"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "e37338aa-61ff-49b0-ac79-cd5b62261eaa"
+migrations_dir = "drizzle"
 
 [[kv_namespaces]]
 binding = "KV"

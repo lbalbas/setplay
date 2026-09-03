@@ -2,10 +2,11 @@
 
 ## Current Phase
 
-- **Phase 1: Context, Design System & Frontend Setup**
+- **Phase 2: Database, Backend Ingestion & Live Services**
 
 ## Current Goal
 
+- Implement external API clients for Twitch Helix (`src/server/twitch.ts`) and start.gg GraphQL (`src/server/startgg.ts`) with Zod input validation and KV OAuth token caching.
 
 ## Completed
 
@@ -24,15 +25,37 @@
 - **Events Directory (Mock)**: Implemented the `/events` page layout (`src/routes/events.tsx`) with location/status filters and responsive list view using mock data.
 - **Admin Dashboard UI (Mock)**: Implemented the full admin dashboard page (`src/routes/admin.tsx`) with Stream Management table, "Link Stream to Event" sidebar panel, and Cron Logs tab. Uses local state and inline mock data; no API integration yet.
 - **Watch View (`/watch/$streamName`)**: Implemented the watch route (`src/routes/watch.$streamName.tsx`) with dynamic path params (e.g. `/watch/str_1`, `/watch/evo-sf6-finals`), responsive split-screen layout, simulated video player, theater mode toggle, live chat panel toggle and interactive input, stream metadata card linked to start.gg brackets, and accessible Web Push notifications toggle switch. Route `/watch` automatically redirects to the headline stream.
+- **LocalStorage Preferences (Basic)**: Persisted selected game filter in `localStorage` through `GameFilterContext`.
+- **Database Migrations & Seeding**: Generated D1 SQLite migration files via `drizzle-kit generate`, configured `wrangler.toml` migration directory, created initial FGC games `seed.sql`, and verified local D1 database execution.
 
 ## In Progress
 
-- **LocalStorage Preferences Integration**: Persist the selected game, followed games, and subscribed events in browser `localStorage` to survive page reloads.
+- **External API Clients (Twitch & start.gg)**: Building type-safe API integrators (`src/server/twitch.ts` and `src/server/startgg.ts`) with Zod input validation schemas and Cloudflare KV OAuth token management.
 
 ## Next Up
-- **Database Migrations & Emulation**: Set up Drizzle migration workflows and verify wrangler local emulation (`wrangler dev` with D1 and KV).
-- **Backend Integrations**: Build the Twitch Helix and start.gg API handlers and the 4-layer matching worker.
-- **Web Push Notifications**: Service worker setup, server-side dispatching using VAPID keys, and permission registration on the client.
+
+1. **External API Clients (Twitch & start.gg)**:
+   - Build Twitch Helix API client with OAuth Client Credentials flow and token caching in Cloudflare KV (`src/server/twitch.ts`).
+   - Build start.gg GraphQL API client (`src/server/startgg.ts`) for active stream queues and tournament discovery.
+   - Validate all external API response shapes at system boundaries using Zod.
+2. **4-Layer Stream Matching Engine**:
+   - Build Twitch Helix API client with OAuth token caching in KV (`src/server/twitch.ts`).
+   - Build start.gg GraphQL API client (`src/server/startgg.ts`) for active stream queues and tournament discovery.
+   - Validate all external API shapes at system boundaries using Zod.
+3. **4-Layer Stream Matching Engine**:
+   - Implement matching algorithm in `src/server/matching.ts` (start.gg Stream Queue -> Known Channel Registry -> Title Pattern Matching -> Casual / Discovery Fallback).
+   - Write Vitest unit tests covering matching edge cases and title parsing.
+4. **Cron Ingestion & KV Caching**:
+   - Implement 60-second cron job in `src/server/cron.ts` to sync live streams to KV (`live_streams`).
+   - Implement 6-hour cron job to query upcoming tournaments and prune expired subscriptions.
+   - Implement public cached endpoint `/api/live-streams` reading directly from KV.
+5. **Web Push Notifications**:
+   - Implement service worker (`public/sw.js`) and VAPID dispatcher (`src/server/push.ts`).
+   - Implement `createServerFn` mutations to register subscriptions and update interest mapping.
+6. **Frontend Live Data Integration & Admin Security**:
+   - Replace mock data in `StreamGrid`, `FeaturedHero`, and `EventCalendar` with live KV cache reads and server loaders.
+   - Secure `/admin` with `ADMIN_TOKEN` verification and connect manual override forms to D1/KV.
+   - Add Playwright E2E verification test suite.
 
 ## Open Questions
 
