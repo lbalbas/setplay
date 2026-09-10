@@ -27,22 +27,18 @@
 - **Watch View (`/watch/$streamName`)**: Implemented the watch route (`src/routes/watch.$streamName.tsx`) with dynamic path params (e.g. `/watch/str_1`, `/watch/evo-sf6-finals`), responsive split-screen layout, simulated video player, theater mode toggle, live chat panel toggle and interactive input, stream metadata card linked to start.gg brackets, and accessible Web Push notifications toggle switch. Route `/watch` automatically redirects to the headline stream.
 - **LocalStorage Preferences (Basic)**: Persisted selected game filter in `localStorage` through `GameFilterContext`.
 - **Database Migrations & Seeding**: Generated D1 SQLite migration files via `drizzle-kit generate`, configured `wrangler.toml` migration directory, created initial FGC games `seed.sql`, and verified local D1 database execution.
+- **Twitch Helix API Integration**: Built `src/server/twitch.ts` with Zod validation schemas, OAuth Client Credentials token caching in Cloudflare KV, and `fetchLiveStreamsByGame` client. Connected `cron.ts` worker to query D1 tracked games and persist live stream data into KV.
 
 ## In Progress
 
-- **External API Clients (Twitch & start.gg)**: Building type-safe API integrators (`src/server/twitch.ts` and `src/server/startgg.ts`) with Zod input validation schemas and Cloudflare KV OAuth token management.
+- **start.gg GraphQL Client**: Building type-safe start.gg GraphQL integrator (`src/server/startgg.ts`) for active stream queues and tournament discovery.
 
 ## Next Up
 
-1. **External API Clients (Twitch & start.gg)**:
-   - Build Twitch Helix API client with OAuth Client Credentials flow and token caching in Cloudflare KV (`src/server/twitch.ts`).
-   - Build start.gg GraphQL API client (`src/server/startgg.ts`) for active stream queues and tournament discovery.
-   - Validate all external API response shapes at system boundaries using Zod.
+1. **start.gg GraphQL Client (`src/server/startgg.ts`)**:
+   - Build start.gg GraphQL API client for active stream queues and tournament discovery.
+   - Validate all external API response shapes using Zod schemas.
 2. **4-Layer Stream Matching Engine**:
-   - Build Twitch Helix API client with OAuth token caching in KV (`src/server/twitch.ts`).
-   - Build start.gg GraphQL API client (`src/server/startgg.ts`) for active stream queues and tournament discovery.
-   - Validate all external API shapes at system boundaries using Zod.
-3. **4-Layer Stream Matching Engine**:
    - Implement matching algorithm in `src/server/matching.ts` (start.gg Stream Queue -> Known Channel Registry -> Title Pattern Matching -> Casual / Discovery Fallback).
    - Write Vitest unit tests covering matching edge cases and title parsing.
 4. **Cron Ingestion & KV Caching**:

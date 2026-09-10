@@ -17,3 +17,4 @@ playwright-report/
 test-results/
 
 # drizzle/  <-- intentionally NOT ignored; migrations should be committed
+.dev.vars
