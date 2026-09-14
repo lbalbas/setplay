@@ -43,14 +43,17 @@ export const StartGGTournamentQueueNodeSchema = z.object({
  * Validates the root GraphQL response for Stream Queue queries.
  */
 export const StartGGStreamQueueResponseSchema = z.object({
-  data: z.object({
-    tournaments: z
-      .object({
-        nodes: z.array(StartGGTournamentQueueNodeSchema).nullable().optional(),
-      })
-      .nullable()
-      .optional(),
-  }),
+  data: z
+    .object({
+      tournaments: z
+        .object({
+          nodes: z.array(StartGGTournamentQueueNodeSchema).nullable().optional(),
+        })
+        .nullable()
+        .optional(),
+    })
+    .nullable()
+    .optional(),
   errors: z.array(z.object({ message: z.string() })).optional(),
 });
 
@@ -84,14 +87,17 @@ export const StartGGTournamentCalendarNodeSchema = z.object({
  * Validates the root GraphQL response for Tournament Calendar queries.
  */
 export const StartGGTournamentCalendarResponseSchema = z.object({
-  data: z.object({
-    tournaments: z
-      .object({
-        nodes: z.array(StartGGTournamentCalendarNodeSchema).nullable().optional(),
-      })
-      .nullable()
-      .optional(),
-  }),
+  data: z
+    .object({
+      tournaments: z
+        .object({
+          nodes: z.array(StartGGTournamentCalendarNodeSchema).nullable().optional(),
+        })
+        .nullable()
+        .optional(),
+    })
+    .nullable()
+    .optional(),
   errors: z.array(z.object({ message: z.string() })).optional(),
 });
 
@@ -158,14 +164,14 @@ export async function queryStartGG<T>(
     throw new Error(`start.gg API request failed (${response.status}): ${errorText}`);
   }
 
-  const json = await response.json();
-  const parsed = schema.parse(json) as T & { errors?: Array<{ message: string }> };
+  const json = (await response.json()) as Record<string, any>;
 
-  if (parsed.errors && parsed.errors.length > 0) {
-    const errorMessages = parsed.errors.map((e) => e.message).join("; ");
+  if (json && typeof json === "object" && Array.isArray(json.errors) && json.errors.length > 0) {
+    const errorMessages = json.errors.map((e: { message?: string }) => e.message || String(e)).join("; ");
     throw new Error(`start.gg GraphQL returned errors: ${errorMessages}`);
   }
 
+  const parsed = schema.parse(json) as T;
   return parsed;
 }
 // ---------------------------------------------------------------------------
@@ -177,7 +183,6 @@ const ACTIVE_STREAMS_QUERY = `
     tournaments(query: {
       perPage: 25
       filter: {
-        hasStream: true
         videogameIds: $videogameIds
       }
     }) {
@@ -268,7 +273,6 @@ const UPCOMING_TOURNAMENTS_QUERY = `
   query UpcomingTournaments($videogameIds: [ID]!, $afterDate: Timestamp!) {
     tournaments(query: {
       perPage: 50
-      sort: "startDate ASC"
       filter: {
         videogameIds: $videogameIds
         afterDate: $afterDate
