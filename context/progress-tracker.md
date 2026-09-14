@@ -6,7 +6,7 @@
 
 ## Current Goal
 
-- Implement external API clients for Twitch Helix (`src/server/twitch.ts`) and start.gg GraphQL (`src/server/startgg.ts`) with Zod input validation and KV OAuth token caching.
+- Implement 4-Layer Stream Matching Engine (`src/server/matching.ts`) implementing Stream Queue, Known Channel Registry, Title Regex Matching, and Casual Discovery Fallback rules.
 
 ## Completed
 
@@ -28,27 +28,25 @@
 - **LocalStorage Preferences (Basic)**: Persisted selected game filter in `localStorage` through `GameFilterContext`.
 - **Database Migrations & Seeding**: Generated D1 SQLite migration files via `drizzle-kit generate`, configured `wrangler.toml` migration directory, created initial FGC games `seed.sql`, and verified local D1 database execution.
 - **Twitch Helix API Integration**: Built `src/server/twitch.ts` with Zod validation schemas, OAuth Client Credentials token caching in Cloudflare KV, and `fetchLiveStreamsByGame` client. Connected `cron.ts` worker to query D1 tracked games and persist live stream data into KV.
+- **start.gg GraphQL Integration**: Built `src/server/startgg.ts` with Zod validation schemas, `fetchActiveStreamQueues` for stream queue matching, and `fetchUpcomingTournaments` for 6-hour D1 calendar sync.
 
 ## In Progress
 
-- **start.gg GraphQL Client**: Building type-safe start.gg GraphQL integrator (`src/server/startgg.ts`) for active stream queues and tournament discovery.
+- **4-Layer Stream Matching Engine**: Building the stream-to-event matching engine (`src/server/matching.ts`).
 
 ## Next Up
 
-1. **start.gg GraphQL Client (`src/server/startgg.ts`)**:
-   - Build start.gg GraphQL API client for active stream queues and tournament discovery.
-   - Validate all external API response shapes using Zod schemas.
-2. **4-Layer Stream Matching Engine**:
+1. **4-Layer Stream Matching Engine**:
    - Implement matching algorithm in `src/server/matching.ts` (start.gg Stream Queue -> Known Channel Registry -> Title Pattern Matching -> Casual / Discovery Fallback).
    - Write Vitest unit tests covering matching edge cases and title parsing.
-4. **Cron Ingestion & KV Caching**:
+2. **Cron Ingestion & KV Caching**:
    - Implement 60-second cron job in `src/server/cron.ts` to sync live streams to KV (`live_streams`).
    - Implement 6-hour cron job to query upcoming tournaments and prune expired subscriptions.
    - Implement public cached endpoint `/api/live-streams` reading directly from KV.
-5. **Web Push Notifications**:
+3. **Web Push Notifications**:
    - Implement service worker (`public/sw.js`) and VAPID dispatcher (`src/server/push.ts`).
    - Implement `createServerFn` mutations to register subscriptions and update interest mapping.
-6. **Frontend Live Data Integration & Admin Security**:
+4. **Frontend Live Data Integration & Admin Security**:
    - Replace mock data in `StreamGrid`, `FeaturedHero`, and `EventCalendar` with live KV cache reads and server loaders.
    - Secure `/admin` with `ADMIN_TOKEN` verification and connect manual override forms to D1/KV.
    - Add Playwright E2E verification test suite.
