@@ -6,7 +6,7 @@
 
 ## Current Goal
 
-- Implement 4-Layer Stream Matching Engine (`src/server/matching.ts`) implementing Stream Queue, Known Channel Registry, Title Regex Matching, and Casual Discovery Fallback rules.
+- Implement full cron ingestion loop in `src/server/cron.ts` and public KV-cached endpoint `/api/live-streams`.
 
 ## Completed
 
@@ -29,17 +29,15 @@
 - **Database Migrations & Seeding**: Generated D1 SQLite migration files via `drizzle-kit generate`, configured `wrangler.toml` migration directory, created initial FGC games `seed.sql`, and verified local D1 database execution.
 - **Twitch Helix API Integration**: Built `src/server/twitch.ts` with Zod validation schemas, OAuth Client Credentials token caching in Cloudflare KV, and `fetchLiveStreamsByGame` client. Connected `cron.ts` worker to query D1 tracked games and persist live stream data into KV.
 - **start.gg GraphQL Integration**: Built `src/server/startgg.ts` with Zod validation schemas, `fetchActiveStreamQueues` for stream queue matching, and `fetchUpcomingTournaments` for 6-hour D1 calendar sync.
+- **4-Layer Stream Matching Engine**: Implemented `src/server/matching.ts` with start.gg Stream Queue (Layer 1), Known Channel Registry (Layer 2), Stream Title Regex & Stage Matching (Layer 3), and Casual Discovery Fallback (Layer 4), plus confidence-based and viewer-based stream ordering. Tested via Vitest suite.
 
 ## In Progress
 
-- **4-Layer Stream Matching Engine**: Building the stream-to-event matching engine (`src/server/matching.ts`).
+- **Cron Ingestion & KV Caching**: Integrating Twitch, start.gg, and matching engine into 60-second cron job in `src/server/cron.ts` and exposing `/api/live-streams`.
 
 ## Next Up
 
-1. **4-Layer Stream Matching Engine**:
-   - Implement matching algorithm in `src/server/matching.ts` (start.gg Stream Queue -> Known Channel Registry -> Title Pattern Matching -> Casual / Discovery Fallback).
-   - Write Vitest unit tests covering matching edge cases and title parsing.
-2. **Cron Ingestion & KV Caching**:
+1. **Cron Ingestion & KV Caching**:
    - Implement 60-second cron job in `src/server/cron.ts` to sync live streams to KV (`live_streams`).
    - Implement 6-hour cron job to query upcoming tournaments and prune expired subscriptions.
    - Implement public cached endpoint `/api/live-streams` reading directly from KV.
