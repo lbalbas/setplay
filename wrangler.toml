@@ -14,7 +14,7 @@ binding = "KV"
 id = "c3bf4b93171446a9b9170fad235440c4"
 
 [triggers]
-crons = ["* * * * *"]
+crons = ["* * * * *", "0 */6 * * *"]
 
 [vars]
 # Non-secret environment variables

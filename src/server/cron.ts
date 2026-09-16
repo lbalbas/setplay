@@ -1,38 +1,186 @@
 import { createDb } from "./db";
-import { games } from "./db/schema";
+import { games, events, eventGames, pushSubscriptions } from "./db/schema";
+import { lt, lte, gte, and, sql } from "drizzle-orm";
 import type { Env } from "./db";
+import { fetchLiveStreamsByGame } from "./twitch";
 import { fetchActiveStreamQueues, fetchUpcomingTournaments } from "./startgg";
+import { matchStreams } from "./matching";
+import type { Event } from "./db/schema";
+import type { StartGGTournament } from "./startgg";
 
 export async function handleCronTrigger(event: ScheduledEvent, env: Env): Promise<void> {
-  console.log(`[Cron Worker] Triggered at ${new Date(event.scheduledTime).toISOString()}`);
+  const cronPattern = event.cron;
+  console.log(
+    `[Cron Worker] Triggered schedule '${cronPattern}' at ${new Date(event.scheduledTime).toISOString()}`,
+  );
+
+  // Dispatch based on cron schedule
+  if (cronPattern === "0 */6 * * *") {
+    await run6HourCalendarSync(env);
+  } else {
+    // Default or "* * * * *" runs the 60s stream matching job
+    await run60sStreamMatching(env);
+  }
+}
+
+export async function run60sStreamMatching(env: Env): Promise<void> {
+  console.log(`[Cron Worker] Triggered at ${new Date().toISOString()}`);
 
   try {
     const db = createDb(env.DB);
-    const trackedGames = await db.select({ startggId: games.startggId }).from(games);
+    const trackedGames = await db
+      .select({ twitchId: games.id, startggId: games.startggId })
+      .from(games);
 
-    // Extract valid start.gg Videogame IDs (e.g. 43868 for SF6, 49783 for Tekken 8)
+    const activeEvents = await db
+      .select()
+      .from(events)
+      .where(and(lte(events.startDate, new Date()), gte(events.endDate, new Date())));
+
     const startggGameIds = trackedGames
       .map((g) => g.startggId)
       .filter((id): id is number => typeof id === "number");
 
+    const twitchGameIds = trackedGames
+      .map((g) => g.twitchId)
+      .filter((id): id is string => typeof id === "string");
+
     console.log(`[Cron Worker] Querying start.gg for ${startggGameIds.length} games...`);
 
-    // 1. Test Stream Queue Fetcher
     const streamQueues = await fetchActiveStreamQueues(env, startggGameIds);
     console.log(
       `[Cron Worker] Retrieved ${streamQueues.length} active stream queues from start.gg.`,
     );
 
-    // 2. Test Tournament Calendar Fetcher
-    const upcomingTournaments = await fetchUpcomingTournaments(env, startggGameIds);
+    const activeStreams = await fetchLiveStreamsByGame(env, twitchGameIds);
+
+    const matchedStreams = matchStreams(activeStreams, streamQueues, activeEvents);
+
+    await env.KV.put("live_streams", JSON.stringify(matchedStreams));
     console.log(
-      `[Cron Worker] Retrieved ${upcomingTournaments.length} upcoming/live tournaments from start.gg.`,
+      `[Cron Worker] Matched ${matchedStreams.length} streams to active events and stored in KV.`,
+    );
+  } catch (error) {
+    console.error(`[Cron Worker] 60s stream matching failed:`, error);
+  }
+}
+
+export async function run6HourCalendarSync(env: Env): Promise<void> {
+  console.log(`[Cron Worker] Triggered at ${new Date().toISOString()}`);
+
+  try {
+    const db = createDb(env.DB);
+    const trackedGames = await db
+      .select({ twitchId: games.id, startggId: games.startggId })
+      .from(games);
+
+    const startggVideogameIds = trackedGames
+      .map((g) => g.startggId)
+      .filter((id): id is number => typeof id === "number");
+
+    console.log(`[Cron Worker] Querying start.gg for ${startggVideogameIds.length} games...`);
+    const upcomingTournaments = await fetchUpcomingTournaments(env, startggVideogameIds);
+    console.log(
+      `[Cron Worker] Retrieved ${upcomingTournaments.length} upcoming tournaments from start.gg.`,
     );
 
-    // Save test output to Cloudflare KV
-    await env.KV.put("startgg_queues_test", JSON.stringify(streamQueues, null, 2));
-    await env.KV.put("startgg_calendar_test", JSON.stringify(upcomingTournaments, null, 2));
+    const processedEvents = formatTournaments(upcomingTournaments);
+
+    if (processedEvents.length > 0) {
+      await db
+        .insert(events)
+        .values(processedEvents)
+        .onConflictDoUpdate({
+          target: events.id,
+          set: {
+            name: sql`excluded.name`,
+            startDate: sql`excluded.start_date`,
+            endDate: sql`excluded.end_date`,
+            status: sql`excluded.status`,
+            imageUrl: sql`excluded.image_url`,
+            attendeeCount: sql`excluded.attendee_count`,
+            location: sql`excluded.location`,
+            isOnline: sql`excluded.is_online`,
+          },
+        });
+    }
+
+    const startggToTwitchMap = new Map<number, string>();
+    for (const game of trackedGames) {
+      if (game.startggId && game.twitchId) {
+        startggToTwitchMap.set(game.startggId, game.twitchId);
+      }
+    }
+
+    for (const tournament of upcomingTournaments) {
+      const eventId = String(tournament.id);
+      for (const startggGameId of tournament.gameIds) {
+        const twitchGameId = startggToTwitchMap.get(startggGameId);
+        if (twitchGameId) {
+          await db
+            .insert(eventGames)
+            .values({
+              eventId,
+              gameId: twitchGameId,
+            })
+            .onConflictDoNothing(); // Ignore if (eventId, gameId) pair already exists
+        }
+      }
+    }
+
+    await pruneExpiredSubscriptions(db);
   } catch (error) {
-    console.error(`[Cron Worker] start.gg test failed:`, error);
+    console.error(`[Cron Worker] Calendar sync failed:`, error);
   }
+}
+
+//Helper function to format tournaments into events
+function formatTournaments(upcomingTournaments: StartGGTournament[]): Event[] {
+  const events: Event[] = [];
+  for (const tournament of upcomingTournaments) {
+    const event: Event = {
+      id: String(tournament.id),
+      name: tournament.name,
+      startDate: new Date(tournament.startAt * 1000),
+      endDate: new Date(tournament.endAt * 1000),
+      slug: tournament.slug,
+      source: "start_gg",
+      startggSlug: tournament.slug,
+      isOnline: tournament.isOnline,
+      location: tournament.location,
+      imageUrl: tournament.bannerUrl,
+      attendeeCount: tournament.numAttendees,
+      status: calculateTournamentStatus(tournament.startAt, tournament.endAt),
+      featuredPriority: "normal",
+      description: null,
+      region: null,
+      registrationUrl: null,
+      prizePool: null,
+    };
+    events.push(event);
+  }
+  return events;
+}
+
+//Helper function to determine the status of a tournament
+function calculateTournamentStatus(
+  startAt: number,
+  endAt: number,
+): "upcoming" | "live" | "completed" {
+  const now = Math.floor(Date.now() / 1000);
+  if (now < startAt) {
+    return "upcoming";
+  } else if (now >= startAt && now <= endAt) {
+    return "live";
+  } else {
+    return "completed";
+  }
+}
+
+async function pruneExpiredSubscriptions(db: ReturnType<typeof createDb>): Promise<void> {
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+
+  await db.delete(pushSubscriptions).where(lt(pushSubscriptions.createdAt, ninetyDaysAgo));
+
+  console.log(`[Cron Worker] Maintenance: Pruned expired push subscriptions.`);
 }
