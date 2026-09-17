@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as EventsRouteImport } from './routes/events'
 import { Route as WatchRouteImport } from './routes/watch'
+import { Route as ApiLiveStreamsRouteImport } from './routes/api/live-streams'
 import { Route as WatchIndexRouteImport } from './routes/watch.index'
 import { Route as WatchStreamNameRouteImport } from './routes/watch.$streamName'
 
@@ -36,6 +37,11 @@ const WatchRoute = WatchRouteImport.update({
   path: '/watch',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiLiveStreamsRoute = ApiLiveStreamsRouteImport.update({
+  id: '/api/live-streams',
+  path: '/api/live-streams',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WatchIndexRoute = WatchIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/events': typeof EventsRoute
   '/watch': typeof WatchRouteWithChildren
+  '/api/live-streams': typeof ApiLiveStreamsRoute
   '/watch/$streamName': typeof WatchStreamNameRoute
   '/watch/': typeof WatchIndexRoute
 }
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/events': typeof EventsRoute
+  '/api/live-streams': typeof ApiLiveStreamsRoute
   '/watch/$streamName': typeof WatchStreamNameRoute
   '/watch': typeof WatchIndexRoute
 }
@@ -68,6 +76,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/events': typeof EventsRoute
   '/watch': typeof WatchRouteWithChildren
+  '/api/live-streams': typeof ApiLiveStreamsRoute
   '/watch/$streamName': typeof WatchStreamNameRoute
   '/watch/': typeof WatchIndexRoute
 }
@@ -78,16 +87,24 @@ export interface FileRouteTypes {
     | '/admin'
     | '/events'
     | '/watch'
+    | '/api/live-streams'
     | '/watch/$streamName'
     | '/watch/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/events' | '/watch/$streamName' | '/watch'
+  to:
+    | '/'
+    | '/admin'
+    | '/events'
+    | '/api/live-streams'
+    | '/watch/$streamName'
+    | '/watch'
   id:
     | '__root__'
     | '/'
     | '/admin'
     | '/events'
     | '/watch'
+    | '/api/live-streams'
     | '/watch/$streamName'
     | '/watch/'
   fileRoutesById: FileRoutesById
@@ -97,6 +114,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   EventsRoute: typeof EventsRoute
   WatchRoute: typeof WatchRouteWithChildren
+  ApiLiveStreamsRoute: typeof ApiLiveStreamsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -127,6 +145,13 @@ declare module '@tanstack/react-router' {
       path: '/watch'
       fullPath: '/watch'
       preLoaderRoute: typeof WatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/live-streams': {
+      id: '/api/live-streams'
+      path: '/api/live-streams'
+      fullPath: '/api/live-streams'
+      preLoaderRoute: typeof ApiLiveStreamsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/watch/': {
@@ -163,6 +188,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   EventsRoute: EventsRoute,
   WatchRoute: WatchRouteWithChildren,
+  ApiLiveStreamsRoute: ApiLiveStreamsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

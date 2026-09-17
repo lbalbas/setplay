@@ -31,20 +31,20 @@
 - **start.gg GraphQL Integration**: Built `src/server/startgg.ts` with Zod validation schemas, `fetchActiveStreamQueues` for stream queue matching, and `fetchUpcomingTournaments` for 6-hour D1 calendar sync.
 - **4-Layer Stream Matching Engine**: Implemented `src/server/matching.ts` with start.gg Stream Queue (Layer 1), Known Channel Registry (Layer 2), Stream Title Regex & Stage Matching (Layer 3), and Casual Discovery Fallback (Layer 4), plus confidence-based and viewer-based stream ordering. Tested via Vitest suite.
 - **Cron Jobs Separation & Ingestion Routines**: Separated the 60-second stream matching job (`run60sStreamMatching`) from the 6-hour calendar sync job (`run6HourCalendarSync`) in `src/server/cron.ts`. Implemented 6-hour start.gg ingestion to query upcoming tournaments, upsert metadata into D1 (`events`), link game relations (`event_games`), and execute subscription maintenance. Configured dual cron triggers (`* * * * *` and `0 */6 * * *`) in `wrangler.toml`.
+- **KV-Cached API Endpoint (`/api/live-streams`)**: Implemented public server route endpoint in `src/routes/api/live-streams.ts` that retrieves matched live stream data directly from Cloudflare KV, returns JSON with custom `Cache-Control` / `CDN-Cache-Control` edge headers, safely handles corrupted JSON fallbacks, and wired Cloudflare environment context passing through `app.fetch` in `src/server/index.ts`. Tested and verified with local cron worker trigger.
 
 ## In Progress
 
-- **API Endpoint & Integration**: Exposing `/api/live-streams` endpoint and connecting live KV stream cache to frontend components.
+- **Frontend Live Data Integration**: Connecting `/api/live-streams` polling to frontend components (`StreamGrid`, `FeaturedHero`, `CalendarSidebar`) to replace mock stream data.
 
 ## Next Up
 
-1. **KV Cache API & Integration**:
-   - Implement public cached endpoint `/api/live-streams` reading directly from KV.
-3. **Web Push Notifications**:
+1. **Frontend Live Data Integration**:
+   - Replace mock data in `StreamGrid`, `FeaturedHero`, and `EventCalendar` with live KV cache reads and polling.
+2. **Web Push Notifications**:
    - Implement service worker (`public/sw.js`) and VAPID dispatcher (`src/server/push.ts`).
    - Implement `createServerFn` mutations to register subscriptions and update interest mapping.
-4. **Frontend Live Data Integration & Admin Security**:
-   - Replace mock data in `StreamGrid`, `FeaturedHero`, and `EventCalendar` with live KV cache reads and server loaders.
+3. **Admin Security & Overrides**:
    - Secure `/admin` with `ADMIN_TOKEN` verification and connect manual override forms to D1/KV.
    - Add Playwright E2E verification test suite.
 
