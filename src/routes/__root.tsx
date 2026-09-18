@@ -4,6 +4,7 @@ import { TanStackDevtools } from "@tanstack/react-devtools";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 import { GameFilterProvider } from "../context/GameFilterContext";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import appCss from "../styles.css?url";
 
@@ -20,6 +21,8 @@ export const Route = createRootRoute({
   shellComponent: RootDocument,
 });
 
+const queryClient = new QueryClient();
+
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
@@ -27,11 +30,13 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="font-sans wrap-anywhere antialiased selection:bg-accent/20">
-        <GameFilterProvider>
-          <Header />
-          {children}
-          <Footer />
-        </GameFilterProvider>
+        <QueryClientProvider client={queryClient}>
+          <GameFilterProvider>
+            <Header />
+            {children}
+            <Footer />
+          </GameFilterProvider>
+        </QueryClientProvider>
         <TanStackDevtools
           config={{ position: "bottom-right" }}
           plugins={[{ name: "Tanstack Router", render: <TanStackRouterDevtoolsPanel /> }]}
