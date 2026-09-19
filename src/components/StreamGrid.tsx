@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { MOCK_STREAMS, MOCK_GAMES, type MockStream } from "#/mocks/data";
+import { MOCK_GAMES } from "#/mocks/data";
 import StreamCard from "./StreamCard";
 import { TrendingUp, Trophy } from "lucide-react";
 import { useGameFilter } from "#/context/GameFilterContext";
+import { useLiveStreams } from "#/hooks/useLiveStreams";
+import type { MatchedStream } from "#/server/matching";
 
 interface StreamGridProps {
   selectedGame?: string;
@@ -20,9 +22,10 @@ export default function StreamGrid({ selectedGame: propSelectedGame }: StreamGri
   const [selectedType, setSelectedType] = useState<string>("all");
   const { selectedGame: contextSelectedGame } = useGameFilter();
   const selectedGame = propSelectedGame ?? contextSelectedGame;
+  const streams = useLiveStreams().data;
 
   // Helper to match game selection
-  const isGameMatch = (stream: MockStream) => {
+  const isGameMatch = (stream: MatchedStream) => {
     if (selectedGame === "all") return true;
     const game = MOCK_GAMES.find((g) => g.id === selectedGame || g.slug === selectedGame);
     if (game) {
@@ -34,20 +37,29 @@ export default function StreamGrid({ selectedGame: propSelectedGame }: StreamGri
     );
   };
 
+  const filteredStreams = streams?.filter((stream) => {
+    if (selectedGame !== "all" && stream.gameId !== selectedGame) {
+      return false;
+    }
+    return true;
+  });
+
+  if (!filteredStreams) return null;
+
   // Filter streams by selected game
-  const gameFilteredStreams = MOCK_STREAMS.filter(isGameMatch);
+  const gameFilteredStreams = filteredStreams.filter(isGameMatch);
 
   // Filter streams by stream type
   const typeFilteredStreams = gameFilteredStreams.filter((stream) => {
     if (selectedType === "all") return true;
-    return stream.type === selectedType;
+    return stream.streamType === selectedType;
   });
 
   // Separate pinned tournaments vs other streams when viewing "all" types
-  const pinnedTournaments = typeFilteredStreams.filter((s) => s.type === "tournament");
+  const pinnedTournaments = typeFilteredStreams.filter((s) => s.streamType === "tournament");
   const allOtherStreams =
     selectedType === "all"
-      ? typeFilteredStreams.filter((s) => s.type !== "tournament")
+      ? typeFilteredStreams.filter((s) => s.streamType !== "tournament")
       : typeFilteredStreams;
 
   const showPinnedSection =

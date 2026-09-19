@@ -1,8 +1,12 @@
-import { MOCK_HEADLINE_STREAM } from "#/mocks/data";
 import { Play, Trophy, ExternalLink } from "lucide-react";
+import { useLiveStreams } from "#/hooks/useLiveStreams";
 
 export default function FeaturedHero() {
-  const stream = MOCK_HEADLINE_STREAM;
+  const streams = useLiveStreams().data ?? [];
+  // Priority: first matched tournament stream, otherwise the stream with highest viewer count
+  const headlineStream = streams.find((s) => s.streamType === "tournament") || streams[0] || null;
+
+  if (!headlineStream) return null;
 
   return (
     <section className="grid grid-cols-1 gap-4 lg:grid-cols-[3fr_2fr]">
@@ -26,7 +30,7 @@ export default function FeaturedHero() {
         <div className="absolute bottom-3 left-3">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-bold tracking-wider text-accent uppercase backdrop-blur-sm">
             <span aria-hidden="true" className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
-            LIVE · {(stream.viewerCount / 1000).toFixed(1)}K watching
+            LIVE · {(headlineStream.viewerCount / 1000).toFixed(1)}K watching
           </span>
         </div>
       </div>
@@ -43,15 +47,15 @@ export default function FeaturedHero() {
 
           {/* Title */}
           <h1 className="font-serif text-2xl leading-tight font-bold text-copy-primary lg:text-3xl">
-            {stream.featuredTitle}
+            {headlineStream.title}
           </h1>
 
           {/* Metadata Rows */}
           <dl className="flex flex-col gap-2 text-sm">
             {[
-              ["Channel", stream.displayName],
-              ["Game", stream.gameName],
-              ["Stage", stream.matchMetadata],
+              ["Channel", headlineStream.displayName],
+              ["Game", headlineStream.gameName],
+              ["Stage", headlineStream.streamType],
             ].map(([label, value]) => (
               <div key={label} className="flex items-center gap-2">
                 <dt className="w-16 shrink-0 text-xs text-copy-secondary">{label}</dt>
@@ -64,9 +68,9 @@ export default function FeaturedHero() {
         {/* Stats Row */}
         <dl className="my-6 grid grid-cols-3 divide-x divide-line">
           {[
-            ["Peak Viewers", stream.peakViewers],
-            ["Duration", stream.duration],
-            ["Prize Pool", stream.prizePool],
+            ["Peak Viewers", headlineStream.viewerCount],
+            ["Duration", headlineStream.startedAt],
+            ["Prize Pool", "N/A"],
           ].map(([label, value]) => (
             <div key={label} className="flex flex-col items-center gap-1 px-3 first:pl-0 last:pr-0">
               <dt className="text-[10px] tracking-widest text-copy-secondary uppercase">{label}</dt>
@@ -85,17 +89,19 @@ export default function FeaturedHero() {
             Watch Now
           </button>
 
-          {stream.bracketUrl && (
-            <a
-              href={stream.bracketUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-copy-secondary transition-colors hover:text-copy-primary"
-            >
-              View Bracket
-              <ExternalLink aria-hidden="true" className="h-3 w-3" />
-            </a>
-          )}
+          {
+            //headlineStream.bracketUrl && (
+            //<a
+            //  href={headlineStream.bracketUrl}
+            //  target="_blank"
+            //  rel="noopener noreferrer"
+            //  className="flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-copy-secondary transition-colors hover:text-copy-primary"
+            //>
+            //  View Bracket
+            //  <ExternalLink aria-hidden="true" className="h-3 w-3" />
+            //</a>
+            //)
+          }
         </div>
       </div>
     </section>

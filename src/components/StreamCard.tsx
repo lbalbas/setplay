@@ -1,9 +1,9 @@
-import { type MockStream } from "#/mocks/data";
 import { Play, Trophy } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import type { MatchedStream } from "#/server/matching";
 
 interface StreamCardProps {
-  stream: MockStream;
+  stream: MatchedStream;
   onClick?: () => void;
 }
 
@@ -37,7 +37,7 @@ export default function StreamCard({ stream, onClick }: StreamCardProps) {
             LIVE
           </span>
 
-          {stream.type === "tournament" && (
+          {stream.streamType === "tournament" && (
             <span className="inline-flex items-center gap-1 rounded-full border border-accent/25 bg-accent/15 px-2 py-0.5 text-[10px] font-bold text-accent uppercase backdrop-blur-sm">
               <Trophy className="h-2.5 w-2.5" />
               Tournament
@@ -62,11 +62,13 @@ export default function StreamCard({ stream, onClick }: StreamCardProps) {
           <p>{stream.gameName}</p>
         </div>
 
-        {stream.matchMetadata && (
-          <div className="mt-3 rounded border border-accent/10 bg-accent/5 px-2 py-1.5 text-[11px] font-medium text-accent">
-            {stream.matchMetadata}
-          </div>
-        )}
+        {
+          //stream.title && (
+          //<div className="mt-3 rounded border border-accent/10 bg-accent/5 px-2 py-1.5 text-[11px] font-medium text-accent">
+          //  {stream.title}
+          // </div>
+          // )
+        }
       </div>
 
       <div className="px-4 pt-0 pb-4">
