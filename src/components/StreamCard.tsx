@@ -62,13 +62,11 @@ export default function StreamCard({ stream, onClick }: StreamCardProps) {
           <p>{stream.gameName}</p>
         </div>
 
-        {
-          //stream.title && (
-          //<div className="mt-3 rounded border border-accent/10 bg-accent/5 px-2 py-1.5 text-[11px] font-medium text-accent">
-          //  {stream.title}
-          // </div>
-          // )
-        }
+        {stream.stageName && (
+          <div className="mt-3 rounded border border-accent/10 bg-accent/5 px-2 py-1.5 text-[11px] font-medium text-accent">
+            {stream.stageName}
+          </div>
+        )}
       </div>
 
       <div className="px-4 pt-0 pb-4">

@@ -89,19 +89,17 @@ export default function FeaturedHero() {
             Watch Now
           </button>
 
-          {
-            //headlineStream.bracketUrl && (
-            //<a
-            //  href={headlineStream.bracketUrl}
-            //  target="_blank"
-            //  rel="noopener noreferrer"
-            //  className="flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-copy-secondary transition-colors hover:text-copy-primary"
-            //>
-            //  View Bracket
-            //  <ExternalLink aria-hidden="true" className="h-3 w-3" />
-            //</a>
-            //)
-          }
+          {headlineStream.bracketUrl && (
+            <a
+              href={headlineStream.bracketUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-copy-secondary transition-colors hover:text-copy-primary"
+            >
+              View Bracket
+              <ExternalLink aria-hidden="true" className="h-3 w-3" />
+            </a>
+          )}
         </div>
       </div>
     </section>

@@ -28,7 +28,7 @@ export interface MatchedEventInfo {
   eventSlug: string;
   startggSlug?: string | null;
   matchSource: MatchSource;
-  confidence: number; // Score between 0.0 and 1.0
+  confidence: number;
 }
 
 /**
@@ -48,6 +48,8 @@ export interface MatchedStream {
   isMature: boolean; // Mature content flag
   streamType: StreamType; // "tournament" | "casual"
   matchedEvent: MatchedEventInfo | null;
+  bracketUrl?: string | null; // e.g. "https://start.gg/tournament/evo-2026"
+  stageName?: string | null; // e.g. "Top 8", "Grand Finals", "Pools"
 }
 
 // Map event slug keywords to known organizer Twitch channel handles (all lowercase)
@@ -153,6 +155,8 @@ export function matchStreams(
           thumbnailUrl: stream.thumbnail_url,
           isMature: stream.is_mature,
           streamType: "tournament",
+          bracketUrl: getBracketUrl(event),
+          stageName: extractStageName(stream.title) ?? "Tournament Bracket",
           matchedEvent: {
             eventId: event.id,
             eventName: event.name,
@@ -193,6 +197,7 @@ export function matchStreams(
         thumbnailUrl: stream.thumbnail_url,
         isMature: stream.is_mature,
         streamType: "tournament",
+        stageName: extractStageName(stream.title) ?? "Tournament Bracket",
         matchedEvent: {
           eventId: registryEvent.id,
           eventName: registryEvent.name,
@@ -221,6 +226,8 @@ export function matchStreams(
         thumbnailUrl: stream.thumbnail_url,
         isMature: stream.is_mature,
         streamType: "tournament",
+        bracketUrl: getBracketUrl(titleMatch.event),
+        stageName: extractStageName(stream.title) ?? "Tournament Bracket",
         matchedEvent: {
           eventId: titleMatch.event.id,
           eventName: titleMatch.event.name,
@@ -266,4 +273,46 @@ export function matchStreams(
     // 3. Higher viewer count first
     return b.viewerCount - a.viewerCount;
   });
+}
+
+export function extractStageName(title: string): string | null {
+  // Ordered from most specific to general
+  const patterns: [RegExp, string][] = [
+    [/\b(grand\s*finals?|gf)\b/i, "Grand Finals"],
+    [/\b(winners?\s*finals?|wf)\b/i, "Winners Finals"],
+    [/\b(losers?\s*finals?|lf)\b/i, "Losers Finals"],
+    [/\b(top\s*4)\b/i, "Top 4"],
+    [/\b(top\s*8)\b/i, "Top 8"],
+    [/\b(top\s*16)\b/i, "Top 16"],
+    [/\b(top\s*24)\b/i, "Top 24"],
+    [/\b(top\s*32)\b/i, "Top 32"],
+    [/\b(top\s*64)\b/i, "Top 64"],
+    [/\b(semis?|semi[\s-]*finals?)\b/i, "Semifinals"],
+    [/\b(quarter[\s-]*finals?|quarters?)\b/i, "Quarterfinals"],
+    [/\b(pools?\s*(day\s*\d+|wave\s*[a-z0-9]+)?)\b/i, "Pools"],
+    [/\b(qualifiers?)\b/i, "Qualifiers"],
+    [/\b(bracket\s*reset)\b/i, "Bracket Reset"],
+  ];
+
+  for (const [regex, label] of patterns) {
+    if (regex.test(title)) {
+      return label;
+    }
+  }
+
+  return null;
+}
+
+export function getBracketUrl(event: Event): string | null {
+  if (event.registrationUrl) {
+    return event.registrationUrl;
+  }
+  const slug = event.startggSlug || event.slug;
+  if (slug) {
+    // If slug is already "tournament/evo-2026" or "evo-2026"
+    return slug.startsWith("tournament/")
+      ? `https://start.gg/${slug}`
+      : `https://start.gg/tournament/${slug}`;
+  }
+  return null;
 }
