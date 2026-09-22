@@ -2,10 +2,19 @@ import { createFileRoute } from "@tanstack/react-router";
 import StreamGrid from "#/components/StreamGrid";
 import FeaturedHero from "#/components/FeaturedHero";
 import EventCalendar from "#/components/EventCalendar";
+import { getEvents } from "#/server/events";
 
-export const Route = createFileRoute("/")({ component: App });
+export const Route = createFileRoute("/")({
+  loader: async () => {
+    const events = await getEvents();
+    return { events };
+  },
+  component: App,
+});
 
 function App() {
+  const { events } = Route.useLoaderData();
+
   return (
     <main className="mx-auto flex w-11/12 max-w-screen-2xl flex-col gap-8 py-8">
       <FeaturedHero />
@@ -14,7 +23,7 @@ function App() {
           <StreamGrid />
         </div>
         <div>
-          <EventCalendar />
+          <EventCalendar events={events} />
         </div>
       </div>
     </main>

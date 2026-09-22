@@ -1,4 +1,3 @@
-import { MOCK_EVENTS } from "#/mocks/data";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
@@ -14,11 +13,15 @@ import {
   isBefore,
 } from "date-fns";
 import { Link } from "@tanstack/react-router";
+import type { EventWithGames } from "../mocks/data";
 
 const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const today = new Date();
 
-export default function EventCalendar() {
+interface EventCalendarProps {
+  events: EventWithGames[];
+}
+export default function EventCalendar({ events = [] }: EventCalendarProps) {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [viewDate, setViewDate] = useState(new Date());
 
@@ -35,9 +38,9 @@ export default function EventCalendar() {
 
   const filteredEvents = useMemo(() => {
     if (selectedDay) {
-      return MOCK_EVENTS.filter((event) => {
-        const start = parseISO(event.startDate.toISOString());
-        const end = parseISO(event.endDate.toISOString());
+      return events.filter((event) => {
+        const start = new Date(event.startDate);
+        const end = new Date(event.endDate);
         const target = parseISO(selectedDay);
         return (
           isSameDay(target, start) ||
@@ -47,14 +50,16 @@ export default function EventCalendar() {
       });
     }
 
-    return MOCK_EVENTS.filter((event) => {
-      const start = parseISO(event.startDate.toISOString());
-      return isAfter(start, today) || isSameDay(start, today);
-    }).sort(
-      (a, b) =>
-        parseISO(a.startDate.toISOString()).getTime() -
-        parseISO(b.startDate.toISOString()).getTime(),
-    );
+    return events
+      .filter((event) => {
+        const start = new Date(event.startDate);
+        return isAfter(start, today) || isSameDay(start, today);
+      })
+      .sort(
+        (a, b) =>
+          parseISO(a.startDate.toISOString()).getTime() -
+          parseISO(b.startDate.toISOString()).getTime(),
+      );
   }, [selectedDay]);
 
   const handleDayClick = (dateString: string) => {
@@ -136,9 +141,14 @@ export default function EventCalendar() {
                     <div
                       className={`h-2 w-2 rounded-full ${event.status === "live" ? "animate-pulse bg-accent" : "border border-copy-secondary/50"}`}
                     />
-                    <span className="text-sm font-bold text-copy-primary transition-colors group-hover:text-accent">
+                    <a
+                      href={event.startggSlug ? `https://start.gg/${event.startggSlug}` : undefined}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm font-bold text-copy-primary transition-colors group-hover:text-accent"
+                    >
                       {event.name}
-                    </span>
+                    </a>
                   </div>
                   <div className="pl-5 text-xs text-copy-secondary">
                     {format(parseISO(event.startDate.toISOString()), "MMM d, HH:mm")}

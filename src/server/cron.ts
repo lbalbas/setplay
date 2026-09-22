@@ -85,11 +85,13 @@ export async function run6HourCalendarSync(env: Env): Promise<void> {
     );
 
     const processedEvents = formatTournaments(upcomingTournaments);
+    const BATCH_SIZE = 5;
 
-    if (processedEvents.length > 0) {
+    for (let i = 0; i < processedEvents.length; i += BATCH_SIZE) {
+      const batch = processedEvents.slice(i, i + BATCH_SIZE);
       await db
         .insert(events)
-        .values(processedEvents)
+        .values(batch)
         .onConflictDoUpdate({
           target: events.id,
           set: {
