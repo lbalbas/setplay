@@ -2,10 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { createDb } from "./db";
 import { events, eventGames, games } from "./db/schema";
 import { eq } from "drizzle-orm";
-import type { Env } from "./db";
+import { getWorkerEnv } from "./env";
 
 export const getEvents = createServerFn({ method: "GET" }).handler(async ({ context }) => {
-  const { env } = (context as unknown as { env?: Env }) ?? {};
+  const env = await getWorkerEnv(context);
 
   if (!env?.DB) {
     console.warn("[getEvents] D1 DB binding not found.");

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import type { Env } from "../../server/db";
+import { getWorkerEnv } from "../../server/env";
 import { MOCK_STREAMS } from "../../mocks/data";
 
 const CORS_HEADERS = {
@@ -15,12 +15,12 @@ export const Route = createFileRoute("/api/live-streams")({
         return new Response(null, { headers: CORS_HEADERS });
       },
       GET: async ({ context }) => {
-        const { env } = (context as unknown as { env?: Env }) ?? {};
+        const env = await getWorkerEnv(context);
 
-        // Fallback for plain `pnpm dev` (Vite dev server without Cloudflare bindings)
+        // Fallback if KV is not available (e.g. initial development before seed/KV populated)
         if (!env?.KV) {
           console.warn(
-            "[/api/live-streams] KV not available (running in pure Vite dev). Serving fallback data.",
+            "[/api/live-streams] KV not available. Serving fallback data.",
           );
           return Response.json([...MOCK_STREAMS], {
             headers: {
