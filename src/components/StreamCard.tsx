@@ -1,6 +1,7 @@
 import { Play, Trophy } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import type { MatchedStream } from "#/server/matching";
+import { getTwitchThumbnail } from "#/utils/formatThumbnail";
 
 interface StreamCardProps {
   stream: MatchedStream;
@@ -15,6 +16,8 @@ export default function StreamCard({ stream, onClick }: StreamCardProps) {
     return count.toString();
   };
 
+  const thumbnailUrl = getTwitchThumbnail(stream.thumbnailUrl, 640, 360);
+
   return (
     <article
       onClick={onClick}
@@ -23,12 +26,20 @@ export default function StreamCard({ stream, onClick }: StreamCardProps) {
       {/* Thumbnail Container */}
       <div className="relative aspect-video w-full overflow-hidden bg-base">
         <div className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_center,rgba(255,242,130,0.03)_0%,transparent_70%)]">
-          <div className="font-serif text-3xl font-bold tracking-wider text-copy-secondary/20">
-            {stream.gameName
-              .split(" ")
-              .map((w) => w[0])
-              .join("")}
-          </div>
+          {thumbnailUrl ? (
+            <img
+              src={thumbnailUrl}
+              alt={stream.title || stream.gameName}
+              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          ) : (
+            <div className="font-serif text-3xl font-bold tracking-wider text-copy-secondary/20">
+              {stream.gameName
+                .split(" ")
+                .map((w) => w[0])
+                .join("")}
+            </div>
+          )}
         </div>
 
         <div className="absolute top-2.5 left-2.5 z-10 flex flex-wrap gap-1.5">

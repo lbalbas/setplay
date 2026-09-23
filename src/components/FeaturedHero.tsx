@@ -1,5 +1,6 @@
 import { Play, Trophy, ExternalLink } from "lucide-react";
 import { useLiveStreams } from "#/hooks/useLiveStreams";
+import { getTwitchThumbnail } from "#/utils/formatThumbnail";
 
 export default function FeaturedHero() {
   const streams = useLiveStreams().data ?? [];
@@ -8,10 +9,27 @@ export default function FeaturedHero() {
 
   if (!headlineStream) return null;
 
+  const thumbnailUrl = getTwitchThumbnail(headlineStream.thumbnailUrl, 1280, 720);
+
+  // Calculate the duration of the stream in seconds based on startedAt and returns formatted string Xh Ym
+  const calculateDuration = (startedAt: string) => {
+    const now = new Date();
+    const started = new Date(startedAt);
+    const duration = (now.getTime() - started.getTime()) / 1000;
+    return `${Math.floor(duration / 3600)}h ${Math.floor((duration % 3600) / 60)}m`;
+  };
+
   return (
     <section className="grid grid-cols-1 gap-4 lg:grid-cols-[3fr_2fr]">
       {/* LEFT: Player Panel */}
       <div className="group relative aspect-video w-full overflow-hidden rounded-xl border border-line bg-base transition-all duration-300 hover:border-accent/40 hover:shadow-[0_0_40px_rgba(255,242,130,0.05)]">
+        {thumbnailUrl && (
+          <img
+            src={thumbnailUrl}
+            alt={headlineStream.title}
+            className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-500 group-hover:scale-105"
+          />
+        )}
         {/* Placeholder gradient background */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,242,130,0.03),transparent_60%)]" />
 
@@ -68,8 +86,8 @@ export default function FeaturedHero() {
         {/* Stats Row */}
         <dl className="my-6 grid grid-cols-3 divide-x divide-line">
           {[
-            ["Peak Viewers", headlineStream.viewerCount],
-            ["Duration", headlineStream.startedAt],
+            ["Current Viewers", headlineStream.viewerCount],
+            ["Duration", calculateDuration(headlineStream.startedAt)],
             ["Prize Pool", "N/A"],
           ].map(([label, value]) => (
             <div key={label} className="flex flex-col items-center gap-1 px-3 first:pl-0 last:pr-0">
