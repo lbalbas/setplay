@@ -135,7 +135,7 @@ export default function EventCalendar({ events = [] }: EventCalendarProps) {
 
           <div className="flex flex-col gap-3">
             {filteredEvents.length > 0 ? (
-              filteredEvents.map((event, index) => (
+              filteredEvents.slice(0, 10).map((event, index) => (
                 <div key={index} className="group cursor-pointer">
                   <div className="flex items-center gap-3">
                     <div

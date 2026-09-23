@@ -167,7 +167,9 @@ export async function queryStartGG<T>(
   const json = (await response.json()) as Record<string, any>;
 
   if (json && typeof json === "object" && Array.isArray(json.errors) && json.errors.length > 0) {
-    const errorMessages = json.errors.map((e: { message?: string }) => e.message || String(e)).join("; ");
+    const errorMessages = json.errors
+      .map((e: { message?: string }) => e.message || String(e))
+      .join("; ");
     throw new Error(`start.gg GraphQL returned errors: ${errorMessages}`);
   }
 
@@ -270,9 +272,11 @@ export async function fetchActiveStreamQueues(
 // ---------------------------------------------------------------------------
 
 const UPCOMING_TOURNAMENTS_QUERY = `
-  query UpcomingTournaments($videogameIds: [ID]!, $afterDate: Timestamp!) {
+  query UpcomingTournaments($videogameIds: [ID]!, $afterDate: Timestamp!, $page: Int!) {
     tournaments(query: {
       perPage: 50
+      page: $page
+      sortBy: "startAt"
       filter: {
         videogameIds: $videogameIds
         afterDate: $afterDate
@@ -304,18 +308,19 @@ const UPCOMING_TOURNAMENTS_QUERY = `
     }
   }
 `;
-
 /**
  * Fetches upcoming and active tournaments from start.gg for database syncing.
  *
  * @param env Worker environment bindings
  * @param startggVideogameIds Tracked start.gg Videogame IDs
  * @param afterDateTimestamp Optional Unix timestamp (defaults to 24 hours in the past)
+ * @param maxPages Number of pages to fetch (default: 3 -> 150 total items)
  */
 export async function fetchUpcomingTournaments(
   env: Env,
   startggVideogameIds: number[],
   afterDateTimestamp?: number,
+  maxPages: number = 5,
 ): Promise<StartGGTournament[]> {
   if (startggVideogameIds.length === 0) {
     return [];
@@ -324,48 +329,62 @@ export async function fetchUpcomingTournaments(
   // Default to 24 hours in the past to include multi-day tournaments currently in progress
   const afterDate = afterDateTimestamp ?? Math.floor(Date.now() / 1000) - 86400;
 
-  const response = await queryStartGG(
-    env,
-    UPCOMING_TOURNAMENTS_QUERY,
-    { videogameIds: startggVideogameIds, afterDate },
-    StartGGTournamentCalendarResponseSchema,
-  );
-
-  const nodes = response.data?.tournaments?.nodes || [];
   const tournaments: StartGGTournament[] = [];
 
-  for (const node of nodes) {
-    // Format location string (e.g. "Chicago, IL, US" or "Online")
-    const isOnline = Boolean(node.isOnline);
-    let location: string | null = null;
-
-    if (!isOnline) {
-      const parts = [node.city, node.addrState, node.countryCode].filter(Boolean);
-      location = parts.length > 0 ? parts.join(", ") : null;
-    }
-
-    // Extract primary banner or profile image URL
-    const bannerImage = (node.images || []).find(
-      (img) => img.type === "banner" || img.type === "profile",
+  // Loop through pages 1 to maxPages
+  for (let page = 1; page <= maxPages; page++) {
+    const response = await queryStartGG(
+      env,
+      UPCOMING_TOURNAMENTS_QUERY,
+      { videogameIds: startggVideogameIds, afterDate, page },
+      StartGGTournamentCalendarResponseSchema,
     );
 
-    // Extract featured game IDs
-    const gameIds = (node.events || [])
-      .map((e) => e.videogame?.id)
-      .filter((id): id is number => typeof id === "number");
+    const nodes = response.data?.tournaments?.nodes || [];
 
-    tournaments.push({
-      id: String(node.id),
-      name: node.name,
-      slug: node.slug,
-      startAt: node.startAt,
-      endAt: node.endAt,
-      isOnline,
-      location,
-      bannerUrl: bannerImage?.url || null,
-      numAttendees: node.numAttendees ?? null,
-      gameIds: [...new Set(gameIds)],
-    });
+    // Stop fetching if start.gg returned an empty page early
+    if (nodes.length === 0) {
+      break;
+    }
+
+    for (const node of nodes) {
+      // Format location string (e.g. "Chicago, IL, US" or "Online")
+      const isOnline = Boolean(node.isOnline);
+      let location: string | null = null;
+
+      if (!isOnline) {
+        const parts = [node.city, node.addrState, node.countryCode].filter(Boolean);
+        location = parts.length > 0 ? parts.join(", ") : null;
+      }
+
+      // Extract primary banner or profile image URL
+      const bannerImage = (node.images || []).find(
+        (img) => img.type === "banner" || img.type === "profile",
+      );
+
+      // Extract featured game IDs
+      const gameIds = (node.events || [])
+        .map((e) => e.videogame?.id)
+        .filter((id): id is number => typeof id === "number");
+
+      tournaments.push({
+        id: String(node.id),
+        name: node.name,
+        slug: node.slug,
+        startAt: node.startAt,
+        endAt: node.endAt,
+        isOnline,
+        location,
+        bannerUrl: bannerImage?.url || null,
+        numAttendees: node.numAttendees ?? null,
+        gameIds: [...new Set(gameIds)],
+      });
+    }
+
+    // If the returned nodes are fewer than perPage (50), there are no further pages
+    if (nodes.length < 50) {
+      break;
+    }
   }
 
   return tournaments;
