@@ -6,7 +6,7 @@
 
 ## Current Goal
 
-- Implement full cron ingestion loop in `src/server/cron.ts` and public KV-cached endpoint `/api/live-streams`.
+- Implement push notification service worker and VAPID dispatcher.
 
 ## Completed
 
@@ -34,20 +34,16 @@
 - **KV-Cached API Endpoint (`/api/live-streams`)**: Implemented public server route endpoint in `src/routes/api/live-streams.ts` that retrieves matched live stream data directly from Cloudflare KV, returns JSON with custom `Cache-Control` / `CDN-Cache-Control` edge headers, safely handles corrupted JSON fallbacks, and wired Cloudflare environment context passing through `app.fetch` in `src/server/index.ts`. Tested and verified with local cron worker trigger.
 - **Cloudflare Vite Dev Integration & HMR**: Configured `@cloudflare/vite-plugin` in `vite.config.ts` and created `src/server/env.ts` helper so server functions and API routes access Cloudflare bindings (D1, KV) during standard `pnpm dev` with full instant React HMR. Created isolated `vitest.config.ts` for unit test stability.
 - **Twitch Thumbnail Formatting**: Implemented `src/utils/formatThumbnail.ts` helper and wired standard dimensions (`640x360` for `StreamCard`, `1280x720` for `FeaturedHero`) replacing Twitch `{width}x{height}` template placeholders.
-- **FGC Game IDs & Seed Data Correction**: Corrected Twitch Game IDs in `src/server/db/seed.sql` (fixed Dragon Ball FighterZ ID which was colliding with Brawl Stars `497497`, and verified Street Fighter 6, Tekken 8, GG Strive, Smash Bros, Mortal Kombat 1, etc.).
-
-## In Progress
-
+- **FGC Game IDs & Seed Data Correction**: Verified and populated fighting game IDs and metadata in `src/server/db/seed.sql` with verified Twitch Helix Game IDs and start.gg Videogame IDs (SF6, Tekken 8, GG Strive, DBFZ, SSBU, SSBM, UNI2, MK1, COTW, MVCC, Marvel Tokon, Avatar Legends, GBVS Rising, GG +R, GG Xrd REV 2, BlazBlue Centralfiction, 2XKO, Melty Blood Type Lumina, and Melty Blood AACC).
 - **Frontend Live Data Integration**: Connecting `/api/live-streams` polling to frontend components (`StreamGrid`, `FeaturedHero`, `CalendarSidebar`) to replace mock stream data.
 
-## Next Up
-
-1. **Frontend Live Data Integration**:
-   - Replace mock data in `StreamGrid`, `FeaturedHero`, and `EventCalendar` with live KV cache reads and polling.
-2. **Web Push Notifications**:
+## In Progress
+- **Web Push Notifications**:
    - Implement service worker (`public/sw.js`) and VAPID dispatcher (`src/server/push.ts`).
    - Implement `createServerFn` mutations to register subscriptions and update interest mapping.
-3. **Admin Security & Overrides**:
+
+## Next Up
+- **Admin Security & Overrides**:
    - Secure `/admin` with `ADMIN_TOKEN` verification and connect manual override forms to D1/KV.
    - Add Playwright E2E verification test suite.
 
