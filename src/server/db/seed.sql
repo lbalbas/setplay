@@ -8,4 +8,14 @@ INSERT OR REPLACE INTO games (id, name, slug, startgg_id) VALUES
   ('973167198', 'Under Night In-Birth II Sys:Celes', 'uni2', 50821),
   ('904864974', 'Mortal Kombat 1', 'mk1', 48346),
   ('1985390977', 'Fatal Fury: City of the Wolves', 'cotw', 52494),
-  ('2130704481', 'Marvel vs. Capcom Fighting Collection', 'mvcc', 53229);
+  ('2130704481', 'Marvel vs. Capcom Fighting Collection', 'mvcc', 53229),
+  ('630009802', 'Marvel Tokon: Fighting Souls', 'tokon', 107706),
+  ('2030977008', 'Avatar Legends: The Fighting Game', 'avatar-legends', 114292),
+  ('818770426', 'Granblue Fantasy Versus: Rising', 'gbvsr', 48548),
+  ('491467', 'Guilty Gear XX Accent Core Plus R', 'ggacpr', 22406),
+  ('496464', 'Guilty Gear Xrd REV 2', 'ggxrd', 36),
+  ('490500', 'BlazBlue: Central Fiction', 'bbcf', 37),
+  ('774680424', '2XKO', '2xko', 64423),
+  ('936945829', 'Melty Blood: Type Lumina', 'mbtl', 36865),
+  ('33318', 'Melty Blood Actress Again Current Code', 'mbaacc', 22407);
+

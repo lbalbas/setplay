@@ -272,9 +272,9 @@ export async function fetchActiveStreamQueues(
 // ---------------------------------------------------------------------------
 
 const UPCOMING_TOURNAMENTS_QUERY = `
-  query UpcomingTournaments($videogameIds: [ID]!, $afterDate: Timestamp!, $page: Int!) {
+  query UpcomingTournaments($videogameIds: [ID]!, $afterDate: Timestamp!, $page: Int!, $perPage: Int!) {
     tournaments(query: {
-      perPage: 50
+      perPage: $perPage
       page: $page
       sortBy: "startAt"
       filter: {
@@ -314,13 +314,15 @@ const UPCOMING_TOURNAMENTS_QUERY = `
  * @param env Worker environment bindings
  * @param startggVideogameIds Tracked start.gg Videogame IDs
  * @param afterDateTimestamp Optional Unix timestamp (defaults to 24 hours in the past)
- * @param maxPages Number of pages to fetch (default: 3 -> 150 total items)
+ * @param maxPages Number of pages to fetch (default: 10)
+ * @param perPage Number of tournaments per page (default: 25)
  */
 export async function fetchUpcomingTournaments(
   env: Env,
   startggVideogameIds: number[],
   afterDateTimestamp?: number,
-  maxPages: number = 5,
+  maxPages: number = 10,
+  perPage: number = 25,
 ): Promise<StartGGTournament[]> {
   if (startggVideogameIds.length === 0) {
     return [];
@@ -330,18 +332,18 @@ export async function fetchUpcomingTournaments(
   const afterDate = afterDateTimestamp ?? Math.floor(Date.now() / 1000) - 86400;
 
   const tournaments: StartGGTournament[] = [];
-
+  console.log("Fetching upcoming tournaments...");
   // Loop through pages 1 to maxPages
   for (let page = 1; page <= maxPages; page++) {
     const response = await queryStartGG(
       env,
       UPCOMING_TOURNAMENTS_QUERY,
-      { videogameIds: startggVideogameIds, afterDate, page },
+      { videogameIds: startggVideogameIds, afterDate, page, perPage },
       StartGGTournamentCalendarResponseSchema,
     );
 
     const nodes = response.data?.tournaments?.nodes || [];
-
+    console.log(`Fetched ${nodes.length} nodes from page ${page} of potentially ${maxPages} pages`);
     // Stop fetching if start.gg returned an empty page early
     if (nodes.length === 0) {
       break;
@@ -381,8 +383,8 @@ export async function fetchUpcomingTournaments(
       });
     }
 
-    // If the returned nodes are fewer than perPage (50), there are no further pages
-    if (nodes.length < 50) {
+    // If the returned nodes are fewer than perPage, there are no further pages
+    if (nodes.length < perPage) {
       break;
     }
   }
