@@ -4,6 +4,8 @@ import { events, eventGames, games } from "./db/schema";
 import { eq } from "drizzle-orm";
 import { getWorkerEnv } from "./env";
 
+export type EventWithGames = typeof events.$inferSelect & { games: (typeof games.$inferSelect)[] };
+
 export const getEvents = createServerFn({ method: "GET" }).handler(async ({ context }) => {
   const env = await getWorkerEnv(context);
 

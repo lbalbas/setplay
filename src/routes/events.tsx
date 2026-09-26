@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { MOCK_EVENTS } from "#/mocks/data";
 import {
   Funnel,
   MapPin,
@@ -11,19 +10,24 @@ import {
   SquareArrowOutUpRight,
 } from "lucide-react";
 import { useGameFilter } from "#/context/GameFilterContext";
+import { getEvents } from "#/server/events";
 
-export const Route = createFileRoute("/events")({ component: EventPage });
+export const Route = createFileRoute("/events")({
+  component: EventPage,
+  loader: () => getEvents(),
+});
 
 function EventPage() {
   const [presentialEventFilter, setPresentialEventFilter] = useState<boolean | "all">("all");
   const [statusEventFilter, setStatusEventFilter] = useState("all");
   const { selectedGame: contextSelectedGame } = useGameFilter();
   const selectedGame = contextSelectedGame;
+  const events = Route.useLoaderData();
 
-  const liveEvents = MOCK_EVENTS.filter((event) => event.status === "live").length;
-  const upcomingEvents = MOCK_EVENTS.filter((event) => event.status === "upcoming").length;
+  const liveEvents = events.filter((event) => event.status === "live").length;
+  const upcomingEvents = events.filter((event) => event.status === "upcoming").length;
 
-  const filteredEvents = MOCK_EVENTS.filter((event) => {
+  const filteredEvents = events.filter((event) => {
     const matchesGame =
       selectedGame === "all" || event.games.some((game) => game.id === selectedGame);
     const matchesStatus = statusEventFilter === "all" || event.status === statusEventFilter;
@@ -50,9 +54,7 @@ function EventPage() {
           </div>
           <div className="flex items-center justify-between gap-6">
             <div className="flex flex-col items-end">
-              <div className="font-serif text-2xl font-bold text-copy-primary">
-                {MOCK_EVENTS.length}
-              </div>
+              <div className="font-serif text-2xl font-bold text-copy-primary">{events.length}</div>
               <span className="text-xs text-copy-secondary">Total Events</span>
             </div>
             <div className="flex flex-col items-end">

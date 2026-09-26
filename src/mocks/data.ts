@@ -1,10 +1,10 @@
-import { type Game, type Event } from "../server/db/schema";
+import { type Game } from "../server/db/schema";
+import type { EventWithGames } from "../server/events";
 
 /**
  * Enriched event type returned by the repository layer after joining
  * event_games → games. Not stored in the DB; assembled at query time.
  */
-export type EventWithGames = Event & { games: Game[] };
 
 export interface MockStream {
   id: string;
@@ -92,12 +92,17 @@ export const MOCK_EVENTS: EventWithGames[] = [
     status: "live",
     // EVO is the largest open event — all tracked games are featured
     games: [
-      { id: "518605",    name: "Street Fighter 6",                   slug: "sf6",  startggId: 43868 },
-      { id: "1811568203",name: "Tekken 8",                           slug: "t8",   startggId: 49783 },
-      { id: "2085304958",name: "Guilty Gear -Strive-",               slug: "ggst", startggId: 33990 },
-      { id: "497385",    name: "Dragon Ball FighterZ",               slug: "dbfz", startggId: 10    },
-      { id: "973167198", name: "Under Night In-Birth II Sys:Celes",  slug: "uni2", startggId: 50821 },
-      { id: "16260",     name: "Super Smash Bros. Melee",            slug: "ssbm", startggId: 1     },
+      { id: "518605", name: "Street Fighter 6", slug: "sf6", startggId: 43868 },
+      { id: "1811568203", name: "Tekken 8", slug: "t8", startggId: 49783 },
+      { id: "2085304958", name: "Guilty Gear -Strive-", slug: "ggst", startggId: 33990 },
+      { id: "497385", name: "Dragon Ball FighterZ", slug: "dbfz", startggId: 10 },
+      {
+        id: "973167198",
+        name: "Under Night In-Birth II Sys:Celes",
+        slug: "uni2",
+        startggId: 50821,
+      },
+      { id: "16260", name: "Super Smash Bros. Melee", slug: "ssbm", startggId: 1 },
     ],
   },
   {
@@ -120,10 +125,10 @@ export const MOCK_EVENTS: EventWithGames[] = [
     featuredPriority: "featured",
     status: "upcoming",
     games: [
-      { id: "518605",    name: "Street Fighter 6",                   slug: "sf6",  startggId: 43868 },
-      { id: "1811568203",name: "Tekken 8",                           slug: "t8",   startggId: 49783 },
-      { id: "2085304958",name: "Guilty Gear -Strive-",               slug: "ggst", startggId: 33990 },
-      { id: "16260",     name: "Super Smash Bros. Melee",            slug: "ssbm", startggId: 1     },
+      { id: "518605", name: "Street Fighter 6", slug: "sf6", startggId: 43868 },
+      { id: "1811568203", name: "Tekken 8", slug: "t8", startggId: 49783 },
+      { id: "2085304958", name: "Guilty Gear -Strive-", slug: "ggst", startggId: 33990 },
+      { id: "16260", name: "Super Smash Bros. Melee", slug: "ssbm", startggId: 1 },
     ],
   },
   {
@@ -145,9 +150,9 @@ export const MOCK_EVENTS: EventWithGames[] = [
     featuredPriority: "normal",
     status: "upcoming",
     games: [
-      { id: "518605",    name: "Street Fighter 6",      slug: "sf6",  startggId: 43868 },
-      { id: "1811568203",name: "Tekken 8",              slug: "t8",   startggId: 49783 },
-      { id: "497385",    name: "Dragon Ball FighterZ",  slug: "dbfz", startggId: 10    },
+      { id: "518605", name: "Street Fighter 6", slug: "sf6", startggId: 43868 },
+      { id: "1811568203", name: "Tekken 8", slug: "t8", startggId: 49783 },
+      { id: "497385", name: "Dragon Ball FighterZ", slug: "dbfz", startggId: 10 },
     ],
   },
 ];
