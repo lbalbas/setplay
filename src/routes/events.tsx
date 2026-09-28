@@ -247,10 +247,14 @@ function EventPage() {
                           {"Watch Now >"}
                         </button>
                       )}
-                      <button className="flex cursor-pointer items-center rounded-2xl bg-elevated py-2 pr-2 pl-4 text-xs font-bold text-copy-secondary">
-                        Bracket
-                        <SquareArrowOutUpRight aria-hidden="true" className="h-3" />
-                      </button>
+                      {event.bracketUrl && (
+                        <a href={event.bracketUrl} target="_blank" rel="noopener noreferrer">
+                          <button className="flex cursor-pointer items-center rounded-2xl bg-elevated py-2 pr-2 pl-4 text-xs font-bold text-copy-secondary">
+                            Bracket
+                            <SquareArrowOutUpRight aria-hidden="true" className="h-3" />
+                          </button>
+                        </a>
+                      )}
                     </div>
                   </div>
                 </div>

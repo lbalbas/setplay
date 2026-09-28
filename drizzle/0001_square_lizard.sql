@@ -1,0 +1,1 @@
+ALTER TABLE `events` ADD `bracket_url` text;

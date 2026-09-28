@@ -152,6 +152,7 @@ function formatTournaments(upcomingTournaments: StartGGTournament[]): Event[] {
       location: tournament.location,
       imageUrl: tournament.bannerUrl,
       attendeeCount: tournament.numAttendees,
+      bracketUrl: getBracketUrlFromTournament(tournament),
       status: calculateTournamentStatus(tournament.startAt, tournament.endAt),
       featuredPriority: "normal",
       description: null,
@@ -185,4 +186,14 @@ async function pruneExpiredSubscriptions(db: ReturnType<typeof createDb>): Promi
   await db.delete(pushSubscriptions).where(lt(pushSubscriptions.createdAt, ninetyDaysAgo));
 
   console.log(`[Cron Worker] Maintenance: Pruned expired push subscriptions.`);
+}
+
+function getBracketUrlFromTournament(tournament: StartGGTournament): string | null {
+  const slug = tournament.slug;
+  if (slug) {
+    return slug.startsWith("tournament/")
+      ? `https://start.gg/${slug}`
+      : `https://start.gg/tournament/${slug}`;
+  }
+  return null;
 }

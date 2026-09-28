@@ -29,6 +29,7 @@ export const events = sqliteTable("events", {
   isOnline: integer("is_online", { mode: "boolean" }).notNull().default(false),
   location: text("location"), // Venue/city string; null for online events
   registrationUrl: text("registration_url"),
+  bracketUrl: text("bracket_url"),
   imageUrl: text("image_url"), // Tournament banner/logo URL
   prizePool: integer("prize_pool"), // Total prize pool in USD; null if not applicable
   // Note: per-game prize pools are deferred to a later phase

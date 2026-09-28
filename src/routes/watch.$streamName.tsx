@@ -69,7 +69,7 @@ interface ResolvedStream {
   viewers: string;
   eventName: string;
   eventId: string | null;
-  bracketUrl: string;
+  bracketUrl: string | null;
   priority: string;
   match: string;
   stage: string;
@@ -91,14 +91,9 @@ function resolveStream(streamName?: string): ResolvedStream {
     : null;
 
   const stream = matched ?? MOCK_HEADLINE_STREAM;
-  const matchingEvent = stream.eventId
-    ? MOCK_EVENTS.find((e) => e.id === stream.eventId)
-    : null;
+  const matchingEvent = stream.eventId ? MOCK_EVENTS.find((e) => e.id === stream.eventId) : null;
 
-  const bracketUrl =
-    ("bracketUrl" in stream && stream.bracketUrl ? stream.bracketUrl : null) ??
-    matchingEvent?.registrationUrl ??
-    "https://start.gg";
+  const bracketUrlString = matchingEvent?.bracketUrl ?? null;
 
   const priority =
     matchingEvent?.featuredPriority === "headline" || stream.id === MOCK_HEADLINE_STREAM.id
@@ -108,8 +103,7 @@ function resolveStream(streamName?: string): ResolvedStream {
         : "Standard";
 
   const match =
-    stream.matchMetadata ??
-    (stream.type === "tournament" ? "Tournament Pool" : "Live Gameplay");
+    stream.matchMetadata ?? (stream.type === "tournament" ? "Tournament Pool" : "Live Gameplay");
 
   const stage = stream.type === "tournament" ? "🔴 In Progress" : "🟢 Live Broadcast";
 
@@ -121,7 +115,7 @@ function resolveStream(streamName?: string): ResolvedStream {
     viewers: stream.viewerCount.toLocaleString(),
     eventName: stream.eventName ?? matchingEvent?.name ?? "FGC Live Broadcast",
     eventId: stream.eventId,
-    bracketUrl,
+    bracketUrl: bracketUrlString,
     priority,
     match,
     stage,
@@ -180,7 +174,7 @@ export function WatchView() {
                   {stream.title}
                 </h1>
                 <div className="mt-2 flex items-center gap-2 text-sm text-copy-secondary">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#FFF282] to-[#c8b900] text-xs font-bold shadow-sm">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-linear-to-b from-[#FFF282] to-[#c8b900] text-xs font-bold shadow-sm">
                     🎮
                   </div>
                   <span className="font-semibold text-copy-primary">{stream.channel}</span>
@@ -336,7 +330,7 @@ function VideoPlayer({ stream, theaterMode }: VideoPlayerProps) {
   return (
     <div
       className={`relative flex w-full items-center justify-center overflow-hidden bg-black transition-all duration-300 ${
-        theaterMode ? "aspect-[21/9]" : "aspect-video"
+        theaterMode ? "aspect-21/9" : "aspect-video"
       }`}
     >
       {/* Visual Ambient Gradients */}
@@ -364,7 +358,7 @@ function VideoPlayer({ stream, theaterMode }: VideoPlayerProps) {
       </div>
 
       {/* Bottom Meta Overlay */}
-      <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-4 pt-8 pb-3">
+      <div className="absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/85 via-black/40 to-transparent px-4 pt-8 pb-3">
         <div className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-accent uppercase">
           <Trophy className="h-3 w-3 text-accent" />
           <span>
@@ -394,11 +388,7 @@ function MatchMetaCard({ stream }: { stream: ResolvedStream }) {
           <span className="mb-1 text-[11px] font-bold tracking-wider text-copy-secondary uppercase">
             {label}
           </span>
-          <span
-            className={`text-sm font-semibold ${
-              accent ? "text-accent" : "text-copy-primary"
-            }`}
-          >
+          <span className={`text-sm font-semibold ${accent ? "text-accent" : "text-copy-primary"}`}>
             {value}
           </span>
         </div>
@@ -409,7 +399,7 @@ function MatchMetaCard({ stream }: { stream: ResolvedStream }) {
           Bracket
         </span>
         <a
-          href={stream.bracketUrl}
+          href={stream.bracketUrl ?? "#"}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 text-sm font-semibold text-accent transition-opacity hover:underline hover:opacity-90"
@@ -432,9 +422,7 @@ function PushNotificationCard({ game, enabled, onToggle }: PushNotificationCardP
   return (
     <div
       className={`rounded-2xl p-5 transition-all duration-200 sm:p-6 ${
-        enabled
-          ? "border border-success/30 bg-success/5"
-          : "border border-line bg-surface"
+        enabled ? "border border-success/30 bg-success/5" : "border border-line bg-surface"
       }`}
     >
       <div className="flex items-center justify-between gap-4">
@@ -474,8 +462,8 @@ function PushNotificationCard({ game, enabled, onToggle }: PushNotificationCardP
           <span
             className={`inline-block h-4.5 w-4.5 rounded-full transition-transform duration-200 ${
               enabled
-                ? "translate-x-5 translate-y-[2px] bg-black"
-                : "translate-x-1 translate-y-[2px] bg-copy-secondary"
+                ? "translate-x-5 translate-y-0.5 bg-black"
+                : "translate-x-1 translate-y-0.5 bg-copy-secondary"
             }`}
           />
         </button>
@@ -524,9 +512,7 @@ function ChatSidebar() {
                 {msg.user[0]}
               </div>
               <div className="min-w-0 flex-1 leading-relaxed">
-                <span className="mr-1.5 text-[11px] font-bold text-accent">
-                  {msg.user}
-                </span>
+                <span className="mr-1.5 text-[11px] font-bold text-accent">{msg.user}</span>
                 <span className="text-xs text-copy-primary">{msg.msg}</span>
               </div>
             </div>
@@ -542,7 +528,7 @@ function ChatSidebar() {
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             placeholder="Send a message..."
-            className="flex-1 rounded-full border border-line bg-elevated px-3.5 py-1.5 text-xs text-copy-primary placeholder:text-copy-secondary/50 outline-none transition-colors focus:border-accent/40"
+            className="flex-1 rounded-full border border-line bg-elevated px-3.5 py-1.5 text-xs text-copy-primary transition-colors outline-none placeholder:text-copy-secondary/50 focus:border-accent/40"
           />
           <button
             type="submit"
