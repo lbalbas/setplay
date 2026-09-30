@@ -36,6 +36,7 @@
 - **Twitch Thumbnail Formatting**: Implemented `src/utils/formatThumbnail.ts` helper and wired standard dimensions (`640x360` for `StreamCard`, `1280x720` for `FeaturedHero`) replacing Twitch `{width}x{height}` template placeholders.
 - **FGC Game IDs & Seed Data Correction**: Verified and populated fighting game IDs and metadata in `src/server/db/seed.sql` with verified Twitch Helix Game IDs and start.gg Videogame IDs (SF6, Tekken 8, GG Strive, DBFZ, SSBU, SSBM, UNI2, MK1, COTW, MVCC, Marvel Tokon, Avatar Legends, GBVS Rising, GG +R, GG Xrd REV 2, BlazBlue Centralfiction, 2XKO, Melty Blood Type Lumina, and Melty Blood AACC).
 - **Database Game Filter Integration**: Hooked up `getGames` in `src/routes/__root.tsx` loader to supply live database game entities to `GameFilterBar` and `StreamGrid`, replacing `MOCK_GAMES` and enabling real Twitch game ID / slug matching across stream lists.
+- **GameFilterBar UI Refinement**: Refactored `GameFilterBar` to show "All" + top 4 featured games as pills with a clean "+ More (N)" dropdown menu for remaining games, with click-outside detection and active filter highlighting.
 - **Frontend Live Data Integration**: Connecting `/api/live-streams` polling to frontend components (`StreamGrid`, `FeaturedHero`, `CalendarSidebar`) to replace mock stream data.
 
 ## In Progress
