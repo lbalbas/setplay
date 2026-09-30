@@ -6,7 +6,7 @@
 
 ## Current Goal
 
-- Implement push notification service worker and VAPID dispatcher.
+- Secure `/admin` with `ADMIN_TOKEN` verification and connect manual override forms to D1/KV.
 
 ## Completed
 
@@ -38,16 +38,16 @@
 - **Database Game Filter Integration**: Hooked up `getGames` in `src/routes/__root.tsx` loader to supply live database game entities to `GameFilterBar` and `StreamGrid`, replacing `MOCK_GAMES` and enabling real Twitch game ID / slug matching across stream lists.
 - **GameFilterBar UI Refinement**: Refactored `GameFilterBar` to show "All" + top 4 featured games as pills with a clean "+ More (N)" dropdown menu for remaining games, with click-outside detection and active filter highlighting.
 - **Frontend Live Data Integration**: Connecting `/api/live-streams` polling to frontend components (`StreamGrid`, `FeaturedHero`, `CalendarSidebar`) to replace mock stream data.
+- **Service Worker & Event Push Notifications**: Implemented `public/sw.js` for background alert handling and window navigation, `src/server/push.ts` for VAPID notification dispatching and dead endpoint pruning (Invariant #4), `src/server/subscriptions.ts` server functions for subscription and interest management, `src/hooks/useEventPushSubscription.ts` and `src/utils/push.ts` for client registration and local state syncing, interactive Bell notification toggles on tournament cards in `src/routes/events.tsx`, and automatic event alert dispatching in the 60-second cron matching routine (`src/server/cron.ts`). Tested and verified via Vitest.
 
 ## In Progress
-- **Web Push Notifications**:
-   - Implement service worker (`public/sw.js`) and VAPID dispatcher (`src/server/push.ts`).
-   - Implement `createServerFn` mutations to register subscriptions and update interest mapping.
 
-## Next Up
 - **Admin Security & Overrides**:
    - Secure `/admin` with `ADMIN_TOKEN` verification and connect manual override forms to D1/KV.
-   - Add Playwright E2E verification test suite.
+
+## Next Up
+
+- Add Playwright E2E verification test suite.
 
 ## Open Questions
 

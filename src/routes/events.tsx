@@ -8,9 +8,13 @@ import {
   UsersRound,
   Trophy,
   SquareArrowOutUpRight,
+  Bell,
+  BellRing,
+  Loader2,
 } from "lucide-react";
 import { useGameFilter } from "#/context/GameFilterContext";
 import { getEvents } from "#/server/events";
+import { useEventPushSubscription } from "#/hooks/useEventPushSubscription";
 
 export const Route = createFileRoute("/events")({
   component: EventPage,
@@ -23,6 +27,7 @@ function EventPage() {
   const { selectedGame: contextSelectedGame } = useGameFilter();
   const selectedGame = contextSelectedGame;
   const events = Route.useLoaderData();
+  const { isSubscribed, isLoading, toggleSubscription } = useEventPushSubscription();
 
   const liveEvents = events.filter((event) => event.status === "live").length;
   const upcomingEvents = events.filter((event) => event.status === "upcoming").length;
@@ -242,6 +247,40 @@ function EventPage() {
                       <span className="text-xs text-copy-secondary">prize pool</span>
                     </div>
                     <div className="mt-2 flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleSubscription(event.id)}
+                        disabled={isLoading(event.id)}
+                        title={
+                          isSubscribed(event.id)
+                            ? "Turn off notifications for this event"
+                            : "Notify me when this tournament goes live"
+                        }
+                        aria-label={
+                          isSubscribed(event.id)
+                            ? `Disable notifications for ${event.name}`
+                            : `Notify me when ${event.name} goes live`
+                        }
+                        className={`inline-flex cursor-pointer items-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-bold transition-all ${
+                          isSubscribed(event.id)
+                            ? "border-accent/50 bg-accent/15 text-accent shadow-[0_0_12px_rgba(255,242,130,0.15)]"
+                            : "border-line bg-elevated text-copy-secondary hover:border-accent/40 hover:text-copy-primary"
+                        }`}
+                      >
+                        {isLoading(event.id) ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : isSubscribed(event.id) ? (
+                          <>
+                            <BellRing className="h-3.5 w-3.5 text-accent" />
+                            <span>Notified</span>
+                          </>
+                        ) : (
+                          <>
+                            <Bell className="h-3.5 w-3.5" />
+                            <span>Notify Me</span>
+                          </>
+                        )}
+                      </button>
                       {event.status === "live" && (
                         <button className="cursor-pointer rounded-2xl bg-accent px-3 py-2 text-xs font-bold">
                           {"Watch Now >"}
