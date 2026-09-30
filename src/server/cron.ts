@@ -5,6 +5,7 @@ import type { Env } from "./db";
 import { fetchLiveStreamsByGame } from "./twitch";
 import { fetchActiveStreamQueues, fetchUpcomingTournaments } from "./startgg";
 import { matchStreams } from "./matching";
+import { dispatchPushToEventSubscribers } from "./push";
 import type { Event } from "./db/schema";
 import type { StartGGTournament } from "./startgg";
 
@@ -60,6 +61,30 @@ export async function run60sStreamMatching(env: Env): Promise<void> {
     console.log(
       `[Cron Worker] Matched ${matchedStreams.length} streams to active events and stored in KV.`,
     );
+
+    // Check for active tournament streams and dispatch push alerts to event subscribers
+    const activeTournamentStreams = matchedStreams.filter(
+      (s) => s.type === "tournament" && s.event?.eventId,
+    );
+
+    for (const stream of activeTournamentStreams) {
+      if (!stream.event) continue;
+      const eventId = stream.event.eventId;
+      const alertKey = `event_alert_sent:${eventId}`;
+
+      const alreadyAlerted = await env.KV.get(alertKey);
+      if (!alreadyAlerted) {
+        await dispatchPushToEventSubscribers(db, env, eventId, {
+          eventId,
+          title: `🏆 ${stream.event.eventName} is Live!`,
+          body: `${stream.displayName} is broadcasting "${stream.title}"`,
+          url: `/events`,
+        });
+
+        // Set 24-hour cooldown flag in KV to prevent duplicate notifications during the event
+        await env.KV.put(alertKey, "1", { expirationTtl: 86400 });
+      }
+    }
   } catch (error) {
     console.error(`[Cron Worker] 60s stream matching failed:`, error);
   }
