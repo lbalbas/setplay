@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { MOCK_GAMES } from "#/mocks/data";
+import { useLoaderData } from "@tanstack/react-router";
 import StreamCard from "./StreamCard";
 import { TrendingUp, Trophy } from "lucide-react";
 import { useGameFilter } from "#/context/GameFilterContext";
 import { useLiveStreams } from "#/hooks/useLiveStreams";
 import type { MatchedStream } from "#/server/matching";
+import type { Game } from "#/server/db/schema";
 
 interface StreamGridProps {
   selectedGame?: string;
@@ -23,31 +24,30 @@ export default function StreamGrid({ selectedGame: propSelectedGame }: StreamGri
   const { selectedGame: contextSelectedGame } = useGameFilter();
   const selectedGame = propSelectedGame ?? contextSelectedGame;
   const streams = useLiveStreams().data;
+  const rootGames = useLoaderData({ from: "__root__" }) as Game[];
 
-  // Helper to match game selection
+  if (!streams) return null;
+
+  // Helper to match game selection against DB games and live Twitch stream metadata
   const isGameMatch = (stream: MatchedStream) => {
     if (selectedGame === "all") return true;
-    const game = MOCK_GAMES.find((g) => g.id === selectedGame || g.slug === selectedGame);
-    if (game) {
-      return stream.gameId === game.id || stream.gameName === game.name;
+
+    const activeGame = rootGames?.find(
+      (g) => g.id === selectedGame || g.slug === selectedGame
+    );
+
+    if (activeGame) {
+      return stream.gameId === activeGame.id || stream.gameName === activeGame.name;
     }
+
     return (
       stream.gameId === selectedGame ||
-      stream.gameName.toLowerCase().includes(selectedGame.toLowerCase())
+      stream.gameName.toLowerCase() === selectedGame.toLowerCase()
     );
   };
 
-  const filteredStreams = streams?.filter((stream) => {
-    if (selectedGame !== "all" && stream.gameId !== selectedGame) {
-      return false;
-    }
-    return true;
-  });
-
-  if (!filteredStreams) return null;
-
   // Filter streams by selected game
-  const gameFilteredStreams = filteredStreams.filter(isGameMatch);
+  const gameFilteredStreams = streams.filter(isGameMatch);
 
   // Filter streams by stream type
   const typeFilteredStreams = gameFilteredStreams.filter((stream) => {

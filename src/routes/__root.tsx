@@ -5,10 +5,12 @@ import Footer from "../components/Footer";
 import Header from "../components/Header";
 import { GameFilterProvider } from "../context/GameFilterContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { getGames } from "../server/games";
 
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
+  loader: () => getGames(),
   head: () => ({
     meta: [
       { charSet: "utf-8" },

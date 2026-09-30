@@ -1,11 +1,14 @@
-import { MOCK_GAMES } from "#/mocks/data";
+import { useLoaderData } from "@tanstack/react-router";
 import { useGameFilter } from "#/context/GameFilterContext";
+import type { Game } from "#/server/db/schema";
 
 interface GameFilterBarProps {
-  games?: typeof MOCK_GAMES;
+  games?: Game[];
 }
 
-export default function GameFilterBar({ games = MOCK_GAMES }: GameFilterBarProps) {
+export default function GameFilterBar({ games: propGames }: GameFilterBarProps) {
+  const rootGames = useLoaderData({ from: "__root__" }) as Game[];
+  const games = propGames ?? rootGames ?? [];
   const { selectedGame, setSelectedGame } = useGameFilter();
 
   return (
