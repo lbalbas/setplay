@@ -64,19 +64,19 @@ export async function run60sStreamMatching(env: Env): Promise<void> {
 
     // Check for active tournament streams and dispatch push alerts to event subscribers
     const activeTournamentStreams = matchedStreams.filter(
-      (s) => s.type === "tournament" && s.event?.eventId,
+      (s) => s.streamType === "tournament" && s.matchedEvent?.eventId,
     );
 
     for (const stream of activeTournamentStreams) {
-      if (!stream.event) continue;
-      const eventId = stream.event.eventId;
+      if (!stream.matchedEvent) continue;
+      const eventId = stream.matchedEvent.eventId;
       const alertKey = `event_alert_sent:${eventId}`;
 
       const alreadyAlerted = await env.KV.get(alertKey);
       if (!alreadyAlerted) {
         await dispatchPushToEventSubscribers(db, env, eventId, {
           eventId,
-          title: `🏆 ${stream.event.eventName} is Live!`,
+          title: `🏆 ${stream.matchedEvent.eventName} is Live!`,
           body: `${stream.displayName} is broadcasting "${stream.title}"`,
           url: `/events`,
         });

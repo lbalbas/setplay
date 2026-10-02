@@ -1,23 +1,20 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import webpush from "web-push";
+import { sendNotification as webpushSendNotification } from "web-push-neo";
 import {
   getSubscriptionId,
   PushSubscriptionPayloadSchema,
   EventSubscriptionInputSchema,
   EventNotificationPayloadSchema,
-  setupVapidDetails,
+  hasValidVapidDetails,
   sendPushNotification,
   dispatchPushToEventSubscribers,
 } from "../../server/push";
 import type { Env } from "../../server/db";
 
-// Mock web-push
-vi.mock("web-push", () => {
+// Mock web-push-neo
+vi.mock("web-push-neo", () => {
   return {
-    default: {
-      setVapidDetails: vi.fn(),
-      sendNotification: vi.fn(),
-    },
+    sendNotification: vi.fn(),
   };
 });
 
@@ -101,7 +98,7 @@ describe("Push Notification Utilities & Schemas", () => {
   });
 });
 
-describe("VAPID Setup & Dispatcher", () => {
+describe("VAPID Validation & Dispatcher (web-push-neo)", () => {
   const mockEnv: Env = {
     DB: {} as any,
     KV: {} as any,
@@ -118,27 +115,21 @@ describe("VAPID Setup & Dispatcher", () => {
     vi.clearAllMocks();
   });
 
-  it("sets up VAPID details when all credentials are provided", () => {
-    const result = setupVapidDetails(mockEnv);
+  it("validates VAPID details when all credentials are provided", () => {
+    const result = hasValidVapidDetails(mockEnv);
     expect(result).toBe(true);
-    expect(webpush.setVapidDetails).toHaveBeenCalledWith(
-      mockEnv.VAPID_SUBJECT,
-      mockEnv.VAPID_PUBLIC_KEY,
-      mockEnv.VAPID_PRIVATE_KEY,
-    );
   });
 
   it("fails gracefully when VAPID credentials are missing", () => {
     const incompleteEnv = { ...mockEnv, VAPID_PUBLIC_KEY: "" };
-    const result = setupVapidDetails(incompleteEnv);
+    const result = hasValidVapidDetails(incompleteEnv);
     expect(result).toBe(false);
-    expect(webpush.setVapidDetails).not.toHaveBeenCalled();
   });
 
   it("successfully sends notification and returns statusCode 201", async () => {
-    vi.mocked(webpush.sendNotification).mockResolvedValueOnce({
+    vi.mocked(webpushSendNotification).mockResolvedValueOnce({
       statusCode: 201,
-      headers: {},
+      headers: new Headers(),
       body: "",
     });
 
@@ -164,10 +155,24 @@ describe("VAPID Setup & Dispatcher", () => {
     expect(result.success).toBe(true);
     expect(result.statusCode).toBe(201);
     expect(mockDb.delete).not.toHaveBeenCalled();
+    expect(webpushSendNotification).toHaveBeenCalledWith(
+      {
+        endpoint: sub.endpoint,
+        keys: { p256dh: sub.p256dh, auth: sub.auth },
+      },
+      expect.any(String),
+      expect.objectContaining({
+        vapidDetails: {
+          subject: mockEnv.VAPID_SUBJECT,
+          publicKey: mockEnv.VAPID_PUBLIC_KEY,
+          privateKey: mockEnv.VAPID_PRIVATE_KEY,
+        },
+      }),
+    );
   });
 
   it("Invariant #4: automatically prunes 410 Gone dead endpoints from D1", async () => {
-    vi.mocked(webpush.sendNotification).mockRejectedValueOnce({
+    vi.mocked(webpushSendNotification).mockRejectedValueOnce({
       statusCode: 410,
       message: "Push subscription has unsubscribed or expired.",
     });
@@ -202,7 +207,7 @@ describe("VAPID Setup & Dispatcher", () => {
   });
 
   it("does not delete subscription on generic server errors (e.g. 500)", async () => {
-    vi.mocked(webpush.sendNotification).mockRejectedValueOnce({
+    vi.mocked(webpushSendNotification).mockRejectedValueOnce({
       statusCode: 500,
       message: "Internal Server Error at Push Service",
     });
@@ -260,8 +265,8 @@ describe("VAPID Setup & Dispatcher", () => {
     } as any;
 
     // Sub 1 succeeds, Sub 2 returns 410 Gone
-    vi.mocked(webpush.sendNotification)
-      .mockResolvedValueOnce({ statusCode: 201, headers: {}, body: "" })
+    vi.mocked(webpushSendNotification)
+      .mockResolvedValueOnce({ statusCode: 201, headers: new Headers(), body: "" })
       .mockRejectedValueOnce({ statusCode: 410, message: "Subscription expired" });
 
     const stats = await dispatchPushToEventSubscribers(mockDb, mockEnv, "combo-breaker-2026", {
