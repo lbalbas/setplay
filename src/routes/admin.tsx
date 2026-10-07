@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { MOCK_EVENTS, MOCK_STREAMS, type MockStream } from "#/mocks/data";
 import {
   Shield,
@@ -14,6 +14,14 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
+  beforeLoad: ({ context }) => {
+    if (!context.auth.isAuthenticated) {
+      throw redirect({
+        to: "/",
+        search: { redirect: "/admin" },
+      });
+    }
+  },
   component: AdminDashboard,
 });
 
