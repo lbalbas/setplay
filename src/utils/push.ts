@@ -5,8 +5,12 @@ import type { PushSubscriptionPayload } from "../server/push";
  * required by the browser's PushManager.subscribe() method.
  */
 export function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  // Ensure string stripped of whitespace
+  const cleanString = base64String.trim();
+
+  // Calculate required '=' padding
+  const padding = "=".repeat((4 - (cleanString.length % 4)) % 4);
+  const base64 = (cleanString + padding).replace(/-/g, "+").replace(/_/g, "/");
 
   const rawData = window.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
@@ -14,6 +18,14 @@ export function urlBase64ToUint8Array(base64String: string): Uint8Array {
   for (let i = 0; i < rawData.length; ++i) {
     outputArray[i] = rawData.charCodeAt(i);
   }
+
+  // Diagnostic check: Uncompressed P-256 public keys MUST be exactly 65 bytes
+  if (outputArray.length !== 65) {
+    console.error(
+      `[Push] Invalid VAPID Key length! Expected 65 bytes, got ${outputArray.length} bytes.`,
+    );
+  }
+
   return outputArray;
 }
 

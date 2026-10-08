@@ -13,65 +13,89 @@ import { EventSubscriptionInputSchema, getSubscriptionId } from "./push";
 /**
  * Returns the VAPID Public Key for client-side subscription generation.
  */
-export const getVapidPublicKey = createServerFn({ method: "GET" }).handler(
-  async ({ context }) => {
-    const env = await getWorkerEnv(context);
-    return {
-      publicKey: env?.VAPID_PUBLIC_KEY ?? "",
-    };
-  },
-);
+export const getVapidPublicKey = createServerFn({ method: "GET" }).handler(async ({ context }) => {
+  const env = await getWorkerEnv(context);
+  return {
+    publicKey: env?.VAPID_PUBLIC_KEY ?? "",
+  };
+});
 
 /**
  * Toggles a user's subscription interest for a specific tournament event.
  * If already subscribed, unregisters the interest. If not subscribed, registers it.
  */
 export const toggleEventSubscription = createServerFn({ method: "POST" })
-  .validator((data: unknown) => EventSubscriptionInputSchema.parse(data))
-  .handler(async ({ data, context }) => {
-    const env = await getWorkerEnv(context);
-    if (!env?.DB) {
-      throw new Error("D1 database binding not available");
+  .validator((data: unknown) => {
+    try {
+      return EventSubscriptionInputSchema.parse(data);
+    } catch (validationError) {
+      console.error("[toggleEventSubscription] Schema validation failed:", {
+        error: validationError,
+        receivedData: data,
+      });
+      throw validationError;
     }
+  })
+  .handler(async ({ data, context }) => {
+    console.log("[toggleEventSubscription] Processing request:", {
+      eventId: data?.eventId,
+      endpoint: data?.subscription?.endpoint?.slice(0, 30) + "...", // Truncated for security
+    });
 
-    const db = createDb(env.DB);
-    const subscriptionId = getSubscriptionId(data.subscription.endpoint);
+    try {
+      const env = await getWorkerEnv(context);
+      if (!env?.DB) {
+        console.error(
+          "[toggleEventSubscription] Error: DB binding missing on Cloudflare Worker env context.",
+        );
+        throw new Error("D1 database binding not available");
+      }
 
-    // 1. Ensure the push subscription record is registered/updated in D1
-    await db
-      .insert(pushSubscriptions)
-      .values({
-        id: subscriptionId,
-        endpoint: data.subscription.endpoint,
-        p256dh: data.subscription.keys.p256dh,
-        auth: data.subscription.keys.auth,
-        createdAt: new Date(),
-      })
-      .onConflictDoUpdate({
-        target: pushSubscriptions.id,
-        set: {
+      const db = createDb(env.DB);
+
+      // Verify endpoint and keys exist to avoid silent undefined DB errors
+      if (
+        !data.subscription?.endpoint ||
+        !data.subscription?.keys?.p256dh ||
+        !data.subscription?.keys?.auth
+      ) {
+        console.error("[toggleEventSubscription] Error: Missing required subscription fields:", {
+          hasEndpoint: !!data.subscription?.endpoint,
+          hasP256dh: !!data.subscription?.keys?.p256dh,
+          hasAuth: !!data.subscription?.keys?.auth,
+        });
+        throw new Error("Invalid Push Subscription payload structure");
+      }
+
+      const subscriptionId = getSubscriptionId(data.subscription.endpoint);
+      console.log(`[toggleEventSubscription] Computed subscriptionId: ${subscriptionId}`);
+
+      // 1. Ensure push subscription record is registered/updated
+      console.log("[toggleEventSubscription] Upserting push subscription record...");
+      await db
+        .insert(pushSubscriptions)
+        .values({
+          id: subscriptionId,
           endpoint: data.subscription.endpoint,
           p256dh: data.subscription.keys.p256dh,
           auth: data.subscription.keys.auth,
-        },
-      });
+          createdAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: pushSubscriptions.id,
+          set: {
+            endpoint: data.subscription.endpoint,
+            p256dh: data.subscription.keys.p256dh,
+            auth: data.subscription.keys.auth,
+          },
+        });
+      console.log("[toggleEventSubscription] Push subscription upserted successfully.");
 
-    // 2. Check if interest already exists for this event
-    const existing = await db
-      .select({ id: subscriptionInterests.id })
-      .from(subscriptionInterests)
-      .where(
-        and(
-          eq(subscriptionInterests.subscriptionId, subscriptionId),
-          eq(subscriptionInterests.interestType, "event"),
-          eq(subscriptionInterests.targetId, data.eventId),
-        ),
-      );
-
-    if (existing.length > 0) {
-      // Unsubscribe from this event
-      await db
-        .delete(subscriptionInterests)
+      // 2. Check if interest already exists for this event
+      console.log("[toggleEventSubscription] Querying existing subscription interest...");
+      const existing = await db
+        .select({ id: subscriptionInterests.id })
+        .from(subscriptionInterests)
         .where(
           and(
             eq(subscriptionInterests.subscriptionId, subscriptionId),
@@ -80,17 +104,49 @@ export const toggleEventSubscription = createServerFn({ method: "POST" })
           ),
         );
 
-      return { subscribed: false, eventId: data.eventId };
+      if (existing.length > 0) {
+        // Unsubscribe
+        console.log(
+          `[toggleEventSubscription] Interest found (id: ${existing[0].id}). Deleting interest...`,
+        );
+        await db
+          .delete(subscriptionInterests)
+          .where(
+            and(
+              eq(subscriptionInterests.subscriptionId, subscriptionId),
+              eq(subscriptionInterests.interestType, "event"),
+              eq(subscriptionInterests.targetId, data.eventId),
+            ),
+          );
+
+        console.log(
+          `[toggleEventSubscription] Successfully unsubscribed from event ${data.eventId}`,
+        );
+        return { subscribed: false, eventId: data.eventId };
+      }
+
+      // Subscribe
+      console.log(
+        `[toggleEventSubscription] No interest found. Creating subscription interest for event ${data.eventId}...`,
+      );
+      await db.insert(subscriptionInterests).values({
+        subscriptionId,
+        interestType: "event",
+        targetId: data.eventId,
+      });
+
+      console.log(`[toggleEventSubscription] Successfully subscribed to event ${data.eventId}`);
+      return { subscribed: true, eventId: data.eventId };
+    } catch (error) {
+      console.error("[toggleEventSubscription] Handler execution failed:", {
+        message: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
+        errorObject: error,
+      });
+
+      // Re-throw so the server function caller handles the error status properly
+      throw error;
     }
-
-    // Subscribe to this event
-    await db.insert(subscriptionInterests).values({
-      subscriptionId,
-      interestType: "event",
-      targetId: data.eventId,
-    });
-
-    return { subscribed: true, eventId: data.eventId };
   });
 
 const EndpointQuerySchema = z.object({

@@ -88,7 +88,9 @@ export function useEventPushSubscription() {
         setPermission(currentPerm);
 
         if (currentPerm !== "granted") {
-          alert("Notification permission was denied. Please enable notifications in your browser settings.");
+          alert(
+            "Notification permission was denied. Please enable notifications in your browser settings.",
+          );
           return false;
         }
 
@@ -105,12 +107,35 @@ export function useEventPushSubscription() {
 
         // 4. Retrieve or create push subscription
         let subscription = await registration.pushManager.getSubscription();
+
+        console.log("[Push] Existing subscription found:", !!subscription);
+        console.log("[Push] Raw VAPID key fetched:", publicKey);
+
+        const applicationServerKey = urlBase64ToUint8Array(publicKey);
+
         if (!subscription) {
-          const applicationServerKey = urlBase64ToUint8Array(publicKey);
-          subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: applicationServerKey as unknown as BufferSource,
-          });
+          console.log("[Push] Attempting pushManager.subscribe...");
+          try {
+            subscription = await registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: applicationServerKey as unknown as BufferSource,
+            });
+          } catch (subErr) {
+            console.error("[Push] pushManager.subscribe directly threw error:", subErr);
+
+            // If stalled/mismatched, attempt to unsubscribe stale sub and retry once
+            const existingSub = await registration.pushManager.getSubscription();
+            if (existingSub) {
+              console.log("[Push] Clearing stale subscription and retrying...");
+              await existingSub.unsubscribe();
+              subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: applicationServerKey as unknown as BufferSource,
+              });
+            } else {
+              throw subErr;
+            }
+          }
         }
 
         const serialized = serializePushSubscription(subscription);
