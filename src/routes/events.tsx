@@ -32,14 +32,16 @@ function EventPage() {
   const liveEvents = events.filter((event) => event.status === "live").length;
   const upcomingEvents = events.filter((event) => event.status === "upcoming").length;
 
-  const filteredEvents = events.filter((event) => {
-    const matchesGame =
-      selectedGame === "all" || event.games.some((game) => game.id === selectedGame);
-    const matchesStatus = statusEventFilter === "all" || event.status === statusEventFilter;
-    const matchesLocation =
-      presentialEventFilter === "all" || event.isOnline === presentialEventFilter;
-    return matchesGame && matchesStatus && matchesLocation;
-  });
+  const filteredEvents = events
+    .filter((event) => {
+      const matchesGame =
+        selectedGame === "all" || event.games.some((game) => game.id === selectedGame);
+      const matchesStatus = statusEventFilter === "all" || event.status === statusEventFilter;
+      const matchesLocation =
+        presentialEventFilter === "all" || event.isOnline === presentialEventFilter;
+      return matchesGame && matchesStatus && matchesLocation;
+    })
+    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
   return (
     <main>
