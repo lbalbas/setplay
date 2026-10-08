@@ -9,10 +9,7 @@ interface GameFilterBarProps {
   featuredCount?: number;
 }
 
-export default function GameFilterBar({
-  games: propGames,
-  featuredCount = 4,
-}: GameFilterBarProps) {
+export default function GameFilterBar({ games: propGames, featuredCount = 4 }: GameFilterBarProps) {
   const rootGames = useLoaderData({ from: "__root__" }) as Game[];
   const games = propGames ?? rootGames ?? [];
   const { selectedGame, setSelectedGame } = useGameFilter();
@@ -36,16 +33,12 @@ export default function GameFilterBar({
 
   // Check if current selection is inside overflow games
   const selectedOverflowGame = overflowGames.find(
-    (g) => g.id === selectedGame || g.slug === selectedGame
+    (g) => g.id === selectedGame || g.slug === selectedGame,
   );
   const isOverflowActive = Boolean(selectedOverflowGame);
 
   return (
-    <div
-      role="group"
-      aria-label="Game filters"
-      className="relative flex items-center gap-2 py-1"
-    >
+    <div role="group" aria-label="Game filters" className="relative flex items-center gap-2 py-1">
       {/* "All" Pill */}
       <button
         type="button"
@@ -117,7 +110,7 @@ export default function GameFilterBar({
           {isOpen && (
             <div
               role="menu"
-              className="absolute left-0 z-50 mt-2 max-h-64 w-56 overflow-y-auto rounded-xl border border-[#2a2a22] bg-[#141411] p-1.5 shadow-xl backdrop-blur-md scrollbar-none"
+              className="absolute left-0 z-50 mt-2 max-h-64 w-56 scrollbar-none overflow-y-auto rounded-xl border border-[#2a2a22] bg-[#141411] p-1.5 shadow-xl backdrop-blur-md"
             >
               {overflowGames.map((game) => {
                 const isSelected = selectedGame === game.id || selectedGame === game.slug;
@@ -137,7 +130,7 @@ export default function GameFilterBar({
                     }`}
                   >
                     <span>{game.name}</span>
-                    <span className="flex items-center gap-1.5 text-[10px] font-mono opacity-80">
+                    <span className="flex items-center gap-1.5 font-mono text-[10px] opacity-80">
                       {game.slug.toUpperCase()}
                       {isSelected && <Check aria-hidden="true" className="h-3 w-3 text-accent" />}
                     </span>

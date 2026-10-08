@@ -1,4 +1,4 @@
-import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
+import { HeadContent, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import Footer from "../components/Footer";
@@ -6,10 +6,25 @@ import Header from "../components/Header";
 import { GameFilterProvider } from "../context/GameFilterContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { getGames } from "../server/games";
+import { checkAdminAuth } from "../server/auth";
 
 import appCss from "../styles.css?url";
 
-export const Route = createRootRoute({
+export interface MyRouterContext {
+  auth: {
+    isAuthenticated: boolean;
+  };
+}
+
+export const Route = createRootRouteWithContext<MyRouterContext>()({
+  beforeLoad: async () => {
+    const { authenticated } = await checkAdminAuth();
+    return {
+      auth: {
+        isAuthenticated: authenticated,
+      },
+    };
+  },
   loader: () => getGames(),
   head: () => ({
     meta: [

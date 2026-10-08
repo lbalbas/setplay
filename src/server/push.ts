@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import webpush from "web-push";
+import { sendNotification as webpushSendNotification } from "web-push-neo";
 import { z } from "zod";
 import { eq, and } from "drizzle-orm";
 import { createDb } from "./db";
@@ -51,24 +51,10 @@ export function getSubscriptionId(endpoint: string): string {
 }
 
 /**
- * Configures VAPID credentials for web-push.
- * Returns true if credentials are valid, false if missing.
+ * Validates whether all required VAPID credentials exist in the environment.
  */
-export function setupVapidDetails(env: Env): boolean {
-  if (!env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY || !env.VAPID_SUBJECT) {
-    console.warn(
-      "[Push] VAPID credentials not fully configured (VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT).",
-    );
-    return false;
-  }
-
-  try {
-    webpush.setVapidDetails(env.VAPID_SUBJECT, env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY);
-    return true;
-  } catch (error) {
-    console.error("[Push] Failed to set VAPID details:", error);
-    return false;
-  }
+export function hasValidVapidDetails(env: Env): boolean {
+  return Boolean(env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY && env.VAPID_SUBJECT);
 }
 
 // ---------------------------------------------------------------------------
@@ -83,7 +69,7 @@ export interface PushResult {
 }
 
 /**
- * Sends a single push notification.
+ * Sends a single push notification via web-push-neo (Web Crypto & fetch).
  * If the push service responds with 404 or 410 Gone, immediately deletes the subscription from D1 (Invariant #4).
  */
 export async function sendPushNotification(
@@ -92,8 +78,10 @@ export async function sendPushNotification(
   subscription: { id: string; endpoint: string; p256dh: string; auth: string },
   payload: EventNotificationPayload,
 ): Promise<PushResult> {
-  const isVapidReady = setupVapidDetails(env);
-  if (!isVapidReady) {
+  if (!hasValidVapidDetails(env)) {
+    console.warn(
+      "[Push] VAPID credentials not fully configured (VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT).",
+    );
     return { success: false, error: "VAPID credentials missing" };
   }
 
@@ -118,7 +106,13 @@ export async function sendPushNotification(
   });
 
   try {
-    const response = await webpush.sendNotification(pushSubscription, notificationData);
+    const response = await webpushSendNotification(pushSubscription, notificationData, {
+      vapidDetails: {
+        subject: env.VAPID_SUBJECT,
+        publicKey: env.VAPID_PUBLIC_KEY,
+        privateKey: env.VAPID_PRIVATE_KEY,
+      },
+    });
     return { success: true, statusCode: response.statusCode };
   } catch (err: unknown) {
     const error = err as { statusCode?: number; message?: string };
