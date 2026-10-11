@@ -43,6 +43,8 @@ function EventPage() {
     })
     .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
+  const totalPlayers = filteredEvents.reduce((acc, event) => acc + (event.attendeeCount ?? 0), 0);
+
   return (
     <main>
       <div className="border-t border-accent-glow bg-surface py-8">
@@ -69,7 +71,9 @@ function EventPage() {
               <span className="text-xs text-copy-secondary">Prize Pool Total</span>
             </div>
             <div className="flex flex-col items-end">
-              <div className="font-serif text-2xl font-bold text-copy-primary">{"14,000+"}</div>
+              <div className="font-serif text-2xl font-bold text-copy-primary">
+                {totalPlayers.toLocaleString()}
+              </div>
               <span className="text-xs text-copy-secondary">Active Players</span>
             </div>
           </div>
