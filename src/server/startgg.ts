@@ -272,7 +272,7 @@ export async function fetchActiveStreamQueues(
 // ---------------------------------------------------------------------------
 
 const UPCOMING_TOURNAMENTS_QUERY = `
-  query UpcomingTournaments($videogameIds: [ID]!, $afterDate: Timestamp!, $page: Int!, $perPage: Int!) {
+  query UpcomingTournaments($videogameIds: [ID]!, $afterDate: Timestamp!, $beforeDate: Timestamp, $page: Int!, $perPage: Int!) {
     tournaments(query: {
       perPage: $perPage
       page: $page
@@ -280,6 +280,7 @@ const UPCOMING_TOURNAMENTS_QUERY = `
       filter: {
         videogameIds: $videogameIds
         afterDate: $afterDate
+        beforeDate: $beforeDate
       }
     }) {
       nodes {
@@ -314,6 +315,7 @@ const UPCOMING_TOURNAMENTS_QUERY = `
  * @param env Worker environment bindings
  * @param startggVideogameIds Tracked start.gg Videogame IDs
  * @param afterDateTimestamp Optional Unix timestamp (defaults to 24 hours in the past)
+ * @param beforeDateTimestamp Optional Unix timestamp (defaults to 12 months in the future)
  * @param maxPages Number of pages to fetch (default: 10)
  * @param perPage Number of tournaments per page (default: 25)
  */
@@ -321,6 +323,7 @@ export async function fetchUpcomingTournaments(
   env: Env,
   startggVideogameIds: number[],
   afterDateTimestamp?: number,
+  beforeDateTimestamp?: number,
   maxPages: number = 10,
   perPage: number = 25,
 ): Promise<StartGGTournament[]> {
@@ -330,6 +333,8 @@ export async function fetchUpcomingTournaments(
 
   // Default to 24 hours in the past to include multi-day tournaments currently in progress
   const afterDate = afterDateTimestamp ?? Math.floor(Date.now() / 1000) - 86400;
+  // Default to 12 months (365 days) from now to filter out far-future placeholder/dummy events
+  const beforeDate = beforeDateTimestamp ?? Math.floor(Date.now() / 1000) + 365 * 86400;
 
   const tournaments: StartGGTournament[] = [];
   console.log("Fetching upcoming tournaments...");
@@ -338,7 +343,7 @@ export async function fetchUpcomingTournaments(
     const response = await queryStartGG(
       env,
       UPCOMING_TOURNAMENTS_QUERY,
-      { videogameIds: startggVideogameIds, afterDate, page, perPage },
+      { videogameIds: startggVideogameIds, afterDate, beforeDate, page, perPage },
       StartGGTournamentCalendarResponseSchema,
     );
 
@@ -350,6 +355,10 @@ export async function fetchUpcomingTournaments(
     }
 
     for (const node of nodes) {
+      // Discard any tournaments starting beyond our 12-month window cutoff
+      if (node.startAt > beforeDate) {
+        continue;
+      }
       // Format location string (e.g. "Chicago, IL, US" or "Online")
       const isOnline = Boolean(node.isOnline);
       let location: string | null = null;

@@ -1,6 +1,6 @@
 import { createDb } from "./db";
 import { games, events, eventGames, pushSubscriptions } from "./db/schema";
-import { lt, lte, gte, and, sql } from "drizzle-orm";
+import { lt, lte, gte, gt, eq, and, sql } from "drizzle-orm";
 import type { Env } from "./db";
 import { fetchLiveStreamsByGame } from "./twitch";
 import { fetchActiveStreamQueues, fetchUpcomingTournaments } from "./startgg";
@@ -156,6 +156,7 @@ export async function run6HourCalendarSync(env: Env): Promise<void> {
     }
 
     await pruneExpiredSubscriptions(db);
+    await pruneOldEvents(db);
   } catch (error) {
     console.error(`[Cron Worker] Calendar sync failed:`, error);
   }
@@ -211,6 +212,33 @@ async function pruneExpiredSubscriptions(db: ReturnType<typeof createDb>): Promi
   await db.delete(pushSubscriptions).where(lt(pushSubscriptions.createdAt, ninetyDaysAgo));
 
   console.log(`[Cron Worker] Maintenance: Pruned expired push subscriptions.`);
+}
+
+async function pruneOldEvents(db: ReturnType<typeof createDb>): Promise<void> {
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+  const oneYearFromNow = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+
+  // Find events that ended more than 90 days ago OR bogus far-future events (> 12 months away)
+  const oldEvents = await db
+    .select({ id: events.id })
+    .from(events)
+    .where(lt(events.endDate, ninetyDaysAgo));
+
+  const farFutureEvents = await db
+    .select({ id: events.id })
+    .from(events)
+    .where(gt(events.startDate, oneYearFromNow));
+
+  const toDelete = [...oldEvents, ...farFutureEvents];
+  if (toDelete.length > 0) {
+    for (const item of toDelete) {
+      await db.delete(eventGames).where(eq(eventGames.eventId, item.id));
+      await db.delete(events).where(eq(events.id, item.id));
+    }
+    console.log(
+      `[Cron Worker] Maintenance: Pruned ${toDelete.length} outdated or far-future events.`,
+    );
+  }
 }
 
 function getBracketUrlFromTournament(tournament: StartGGTournament): string | null {

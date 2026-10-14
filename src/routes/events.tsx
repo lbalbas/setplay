@@ -21,9 +21,11 @@ export const Route = createFileRoute("/events")({
   loader: () => getEvents(),
 });
 
+type StatusFilter = "active" | "live" | "upcoming" | "completed" | "all";
+
 function EventPage() {
   const [presentialEventFilter, setPresentialEventFilter] = useState<boolean | "all">("all");
-  const [statusEventFilter, setStatusEventFilter] = useState("all");
+  const [statusEventFilter, setStatusEventFilter] = useState<StatusFilter>("active");
   const { selectedGame: contextSelectedGame } = useGameFilter();
   const selectedGame = contextSelectedGame;
   const events = Route.useLoaderData();
@@ -36,12 +38,22 @@ function EventPage() {
     .filter((event) => {
       const matchesGame =
         selectedGame === "all" || event.games.some((game) => game.id === selectedGame);
-      const matchesStatus = statusEventFilter === "all" || event.status === statusEventFilter;
+      const matchesStatus =
+        statusEventFilter === "active"
+          ? event.status === "live" || event.status === "upcoming"
+          : statusEventFilter === "all"
+            ? true
+            : event.status === statusEventFilter;
       const matchesLocation =
         presentialEventFilter === "all" || event.isOnline === presentialEventFilter;
       return matchesGame && matchesStatus && matchesLocation;
     })
-    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+    .sort((a, b) => {
+      if (statusEventFilter === "completed") {
+        return new Date(b.endDate).getTime() - new Date(a.endDate).getTime();
+      }
+      return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+    });
 
   const totalPlayers = filteredEvents.reduce((acc, event) => acc + (event.attendeeCount ?? 0), 0);
 
@@ -93,14 +105,22 @@ function EventPage() {
             >
               <button
                 type="button"
-                className={`cursor-pointer rounded-xl px-3 py-1 transition-colors ${presentialEventFilter === "all" ? "bg-accent font-bold text-base" : "bg-elevated hover:text-copy-primary"}`}
+                className={`cursor-pointer rounded-xl px-3 py-1 transition-colors ${
+                  presentialEventFilter === "all"
+                    ? "bg-accent font-bold text-black"
+                    : "bg-elevated hover:text-copy-primary"
+                }`}
                 onClick={() => setPresentialEventFilter("all")}
               >
                 All
               </button>
               <button
                 type="button"
-                className={`flex cursor-pointer items-center rounded-xl px-3 py-1 transition-colors ${presentialEventFilter === true ? "bg-accent font-bold text-base" : "bg-elevated hover:text-copy-primary"}`}
+                className={`flex cursor-pointer items-center rounded-xl px-3 py-1 transition-colors ${
+                  presentialEventFilter === true
+                    ? "bg-accent font-bold text-black"
+                    : "bg-elevated hover:text-copy-primary"
+                }`}
                 onClick={() => setPresentialEventFilter(true)}
               >
                 <Wifi aria-hidden="true" className="h-3" />
@@ -108,7 +128,11 @@ function EventPage() {
               </button>
               <button
                 type="button"
-                className={`flex cursor-pointer items-center rounded-xl px-3 py-1 transition-colors ${presentialEventFilter === false ? "bg-accent font-bold text-base" : "bg-elevated hover:text-copy-primary"}`}
+                className={`flex cursor-pointer items-center rounded-xl px-3 py-1 transition-colors ${
+                  presentialEventFilter === false
+                    ? "bg-accent font-bold text-black"
+                    : "bg-elevated hover:text-copy-primary"
+                }`}
                 onClick={() => setPresentialEventFilter(false)}
               >
                 <MapPin aria-hidden="true" className="h-3" />
@@ -119,31 +143,58 @@ function EventPage() {
               <div className="flex items-center gap-2 text-sm">
                 <button
                   type="button"
-                  className={`cursor-pointer rounded-xl px-3 py-1 transition-colors ${statusEventFilter === "all" ? "bg-elevated font-bold text-copy-primary" : ""}`}
-                  onClick={() => setStatusEventFilter("all")}
+                  className={`cursor-pointer rounded-xl px-3 py-1 transition-colors ${
+                    statusEventFilter === "active"
+                      ? "bg-accent font-bold text-black"
+                      : "bg-elevated hover:text-copy-primary"
+                  }`}
+                  onClick={() => setStatusEventFilter("active")}
                 >
-                  All Status
+                  Upcoming & Live
                 </button>
                 <button
                   type="button"
-                  className={`cursor-pointer rounded-xl px-3 py-1 transition-colors ${statusEventFilter === "live" ? "bg-elevated font-bold text-copy-primary" : ""}`}
+                  className={`cursor-pointer rounded-xl px-3 py-1 transition-colors ${
+                    statusEventFilter === "live"
+                      ? "bg-accent font-bold text-black"
+                      : "bg-elevated hover:text-copy-primary"
+                  }`}
                   onClick={() => setStatusEventFilter("live")}
                 >
                   Ongoing
                 </button>
                 <button
                   type="button"
-                  className={`cursor-pointer rounded-xl px-3 py-1 transition-colors ${statusEventFilter === "upcoming" ? "bg-elevated font-bold text-copy-primary" : ""}`}
+                  className={`cursor-pointer rounded-xl px-3 py-1 transition-colors ${
+                    statusEventFilter === "upcoming"
+                      ? "bg-accent font-bold text-black"
+                      : "bg-elevated hover:text-copy-primary"
+                  }`}
                   onClick={() => setStatusEventFilter("upcoming")}
                 >
                   Upcoming
                 </button>
                 <button
                   type="button"
-                  className={`rounded-xl px-3 py-1 transition-colors ${statusEventFilter === "completed" ? "bg-elevated font-bold text-copy-primary" : ""}`}
+                  className={`cursor-pointer rounded-xl px-3 py-1 transition-colors ${
+                    statusEventFilter === "completed"
+                      ? "bg-accent font-bold text-black"
+                      : "bg-elevated hover:text-copy-primary"
+                  }`}
                   onClick={() => setStatusEventFilter("completed")}
                 >
                   Completed
+                </button>
+                <button
+                  type="button"
+                  className={`cursor-pointer rounded-xl px-3 py-1 transition-colors ${
+                    statusEventFilter === "all"
+                      ? "bg-accent font-bold text-black"
+                      : "bg-elevated hover:text-copy-primary"
+                  }`}
+                  onClick={() => setStatusEventFilter("all")}
+                >
+                  All
                 </button>
               </div>
             </div>
@@ -163,7 +214,7 @@ function EventPage() {
                 type="button"
                 onClick={() => {
                   setPresentialEventFilter("all");
-                  setStatusEventFilter("all");
+                  setStatusEventFilter("active");
                 }}
                 className="mt-4 cursor-pointer rounded-xl bg-elevated px-4 py-2 text-xs font-bold text-copy-primary transition-colors hover:bg-accent hover:text-black"
               >
@@ -171,73 +222,66 @@ function EventPage() {
               </button>
             </div>
           ) : (
-            filteredEvents.map((event) => {
-              let shouldRender =
-                (selectedGame === "all" ||
-                  event.games.map((game) => game.id).includes(selectedGame)) &&
-                (statusEventFilter === "all" || event.status === statusEventFilter) &&
-                (presentialEventFilter === "all" || event.isOnline === presentialEventFilter);
-
-              return !shouldRender ? null : (
+            filteredEvents.map((event) => (
+              <div
+                key={event.id}
+                className="relative flex w-full justify-between overflow-hidden rounded-lg border border-accent-glow bg-surface p-8"
+              >
                 <div
-                  key={event.id}
-                  className="relative flex w-full justify-between overflow-hidden rounded-lg border border-accent-glow bg-surface p-8"
-                >
-                  <div
-                    className={`absolute top-0 bottom-0 left-0 w-1 ${
-                      event.status === "live" ? "bg-accent" : "bg-copy-secondary"
-                    }`}
-                  />
-                  <div className="flex w-1/2 flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                      {event.status === "live" ? (
-                        <span className="inline-flex items-center gap-1 rounded border border-accent/20 bg-accent/10 px-2 py-0.5 text-[10px] font-extrabold tracking-wider text-accent uppercase shadow-[0_0_8px_rgba(255,242,130,0.15),0_0_20px_rgba(255,242,130,0.08)]">
-                          <span className="h-1 w-1 animate-pulse rounded-full bg-accent shadow-[0_0_4px_#FFF282]" />
-                          Live Now
-                        </span>
-                      ) : event.status === "upcoming" ? (
-                        <span className="inline-flex items-center gap-1 rounded border border-line bg-elevated px-2 py-0.5 text-[10px] font-bold tracking-wider text-copy-secondary uppercase">
-                          Upcoming
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 rounded border border-line/40 bg-[#161613] px-2 py-0.5 text-[10px] font-medium tracking-wider text-copy-secondary/50 uppercase">
-                          Completed
-                        </span>
-                      )}
-                      {event.isOnline ? (
-                        <span className="flex items-center text-xs text-copy-secondary">
-                          <Wifi aria-hidden="true" className="h-3" /> Online
-                        </span>
-                      ) : (
-                        <span className="flex items-center text-xs  text-copy-secondary">
-                          <MapPin aria-hidden="true" className="h-3" /> Offline
-                        </span>
-                      )}
-                    </div>
-                    <div className="font-serif text-2xl text-copy-primary">{event.name}</div>
-                    <p className="text-sm text-copy-secondary">{event.description ?? ""}</p>
-                    <div className="flex flex-wrap gap-1">
-                      {event.games.map((game) => {
-                        return (
-                          <span
-                            key={game.name}
-                            className="mt-1 rounded-xl bg-elevated px-2 py-1 text-xs text-copy-secondary"
-                          >
-                            {game.name}
-                          </span>
-                        );
-                      })}
-                    </div>
+                  className={`absolute top-0 bottom-0 left-0 w-1 ${
+                    event.status === "live" ? "bg-accent" : "bg-copy-secondary"
+                  }`}
+                />
+                <div className="flex w-1/2 flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    {event.status === "live" ? (
+                      <span className="inline-flex items-center gap-1 rounded border border-accent/20 bg-accent/10 px-2 py-0.5 text-[10px] font-extrabold tracking-wider text-accent uppercase shadow-[0_0_8px_rgba(255,242,130,0.15),0_0_20px_rgba(255,242,130,0.08)]">
+                        <span className="h-1 w-1 animate-pulse rounded-full bg-accent shadow-[0_0_4px_#FFF282]" />
+                        Live Now
+                      </span>
+                    ) : event.status === "upcoming" ? (
+                      <span className="inline-flex items-center gap-1 rounded border border-line bg-elevated px-2 py-0.5 text-[10px] font-bold tracking-wider text-copy-secondary uppercase">
+                        Upcoming
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded border border-line/40 bg-[#161613] px-2 py-0.5 text-[10px] font-medium tracking-wider text-copy-secondary/50 uppercase">
+                        Completed
+                      </span>
+                    )}
+                    {event.isOnline ? (
+                      <span className="flex items-center text-xs text-copy-secondary">
+                        <Wifi aria-hidden="true" className="h-3" /> Online
+                      </span>
+                    ) : (
+                      <span className="flex items-center text-xs  text-copy-secondary">
+                        <MapPin aria-hidden="true" className="h-3" /> Offline
+                      </span>
+                    )}
                   </div>
-                  <div className="flex w-1/2 flex-col items-end gap-2">
-                    <span className="flex items-center text-sm font-bold text-copy-primary">
-                      <Calendar aria-hidden="true" className="h-3" />
-                      {new Intl.DateTimeFormat("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      }).formatRange(event.startDate, event.endDate)}
-                    </span>
+                  <div className="font-serif text-2xl text-copy-primary">{event.name}</div>
+                  <p className="text-sm text-copy-secondary">{event.description ?? ""}</p>
+                  <div className="flex flex-wrap gap-1">
+                    {event.games.map((game) => {
+                      return (
+                        <span
+                          key={game.name}
+                          className="mt-1 rounded-xl bg-elevated px-2 py-1 text-xs text-copy-secondary"
+                        >
+                          {game.name}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="flex w-1/2 flex-col items-end gap-2">
+                  <span className="flex items-center text-sm font-bold text-copy-primary">
+                    <Calendar aria-hidden="true" className="h-3" />
+                    {new Intl.DateTimeFormat("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    }).formatRange(new Date(event.startDate), new Date(event.endDate))}
+                  </span>
                     <span className="flex items-center text-xs text-copy-secondary">
                       <MapPin aria-hidden="true" className="h-3" />{" "}
                       {event.isOnline ? "Online" : (event.location ?? "")}
@@ -303,8 +347,7 @@ function EventPage() {
                     </div>
                   </div>
                 </div>
-              );
-            })
+              ))
           )}
         </div>
       </div>

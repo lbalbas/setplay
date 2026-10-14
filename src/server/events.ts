@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createDb } from "./db";
 import { events, eventGames, games } from "./db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, gte, lte } from "drizzle-orm";
 import { getWorkerEnv } from "./env";
 
 export type EventWithGames = typeof events.$inferSelect & { games: (typeof games.$inferSelect)[] };
@@ -16,7 +16,11 @@ export const getEvents = createServerFn({ method: "GET" }).handler(async ({ cont
 
   const db = createDb(env.DB);
 
-  // Query active & upcoming events (from start of today onwards, or all recent)
+  // Time boundary: events ending within the last 30 days up to starting within 12 months (365 days)
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const oneYearFromNow = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+
+  // Query active, upcoming, and recent completed events
   const rawEvents = await db
     .select({
       event: events,
@@ -24,7 +28,13 @@ export const getEvents = createServerFn({ method: "GET" }).handler(async ({ cont
     })
     .from(events)
     .leftJoin(eventGames, eq(events.id, eventGames.eventId))
-    .leftJoin(games, eq(eventGames.gameId, games.id));
+    .leftJoin(games, eq(eventGames.gameId, games.id))
+    .where(
+      and(
+        gte(events.endDate, thirtyDaysAgo),
+        lte(events.startDate, oneYearFromNow),
+      ),
+    );
 
   // Group many-to-many game relations per event
   const eventMap = new Map<
