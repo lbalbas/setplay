@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { MOCK_EVENTS, MOCK_STREAMS, type MockStream } from "#/mocks/data";
+import { useLiveStreams } from "#/hooks/useLiveStreams";
 import {
   Shield,
   Star,
@@ -12,6 +12,8 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
+import { getEvents } from "#/server/events";
+import type { MatchedStream } from "#/server/matching";
 
 export const Route = createFileRoute("/admin")({
   beforeLoad: ({ context }) => {
@@ -22,6 +24,7 @@ export const Route = createFileRoute("/admin")({
       });
     }
   },
+  loader: () => getEvents(),
   component: AdminDashboard,
 });
 
@@ -52,22 +55,22 @@ interface CronLogEntry {
  * the headline stream (the one with the highest viewer count that's linked)
  * gets "headline". Everything else is "normal".
  */
-function buildInitialOverrides(): Record<string, StreamOverride> {
+function buildInitialOverrides(streams: MatchedStream[]): Record<string, StreamOverride> {
   const overrides: Record<string, StreamOverride> = {};
 
   // Find the top-linked stream to mark as headline
-  const linkedStreams = MOCK_STREAMS.filter((s) => s.eventId !== null);
+  const linkedStreams = streams.filter((s) => s.matchedEvent?.eventId !== null);
   const topLinked = linkedStreams.sort((a, b) => b.viewerCount - a.viewerCount)[0];
 
-  for (const stream of MOCK_STREAMS) {
+  for (const stream of streams) {
     let priority: PriorityLevel = "normal";
-    if (stream.eventId !== null) {
+    if (stream.matchedEvent?.eventId !== null) {
       priority = stream.id === topLinked?.id ? "headline" : "featured";
     }
 
     overrides[stream.id] = {
-      eventId: stream.eventId,
-      eventName: stream.eventName,
+      eventId: stream.matchedEvent?.eventId ?? null,
+      eventName: stream.matchedEvent?.eventName ?? null,
       priority,
     };
   }
@@ -152,8 +155,13 @@ type TabId = "streams" | "cron";
 // ---------------------------------------------------------------------------
 
 function AdminDashboard() {
+  const streams = useLiveStreams().data ?? [];
+  const events = Route.useLoaderData();
+
   const [activeTab, setActiveTab] = useState<TabId>("streams");
-  const [overrides, setOverrides] = useState<Record<string, StreamOverride>>(buildInitialOverrides);
+  const [overrides, setOverrides] = useState<Record<string, StreamOverride>>(
+    buildInitialOverrides(streams),
+  );
   const [editingStreamId, setEditingStreamId] = useState<string | null>(null);
 
   // Sidebar form state
@@ -161,13 +169,13 @@ function AdminDashboard() {
   const [selectedPriority, setSelectedPriority] = useState<PriorityLevel>("normal");
 
   // Derived stats
-  const activeCount = MOCK_STREAMS.length;
-  const linkedCount = MOCK_STREAMS.filter((s) => overrides[s.id]?.eventId !== null).length;
-  const headlineCount = MOCK_STREAMS.filter((s) => overrides[s.id]?.priority === "headline").length;
+  const activeCount = streams.length;
+  const linkedCount = streams.filter((s) => overrides[s.id]?.eventId !== null).length;
+  const headlineCount = streams.filter((s) => overrides[s.id]?.priority === "headline").length;
 
-  const editingStream = MOCK_STREAMS.find((s) => s.id === editingStreamId) ?? null;
+  const editingStream = streams.find((s) => s.id === editingStreamId) ?? null;
 
-  function handleEdit(stream: MockStream) {
+  function handleEdit(stream: MatchedStream) {
     const override = overrides[stream.id];
     setEditingStreamId(stream.id);
     setSelectedEventId(override?.eventId ?? "");
@@ -177,7 +185,7 @@ function AdminDashboard() {
   function handleApplyLink() {
     if (!editingStreamId) return;
 
-    const linkedEvent = MOCK_EVENTS.find((e) => e.id === selectedEventId);
+    const linkedEvent = events.find((e) => e.id === selectedEventId);
 
     setOverrides((prev) => ({
       ...prev,
@@ -299,7 +307,7 @@ function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {MOCK_STREAMS.map((stream) => {
+                      {streams.map((stream) => {
                         const override = overrides[stream.id];
                         const isLinked = Boolean(override?.eventId);
                         const priority = override?.priority ?? "normal";
@@ -389,7 +397,7 @@ function AdminDashboard() {
                           className="cursor-pointer rounded-lg border border-line bg-elevated px-3 py-2 text-sm text-copy-primary transition-colors outline-none focus:border-accent"
                         >
                           <option value="">Select an event...</option>
-                          {MOCK_EVENTS.map((ev) => (
+                          {events.map((ev) => (
                             <option key={ev.id} value={ev.id}>
                               {ev.name}
                             </option>

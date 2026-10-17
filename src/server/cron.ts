@@ -9,6 +9,21 @@ import { dispatchPushToEventSubscribers } from "./push";
 import type { Event } from "./db/schema";
 import type { StartGGTournament } from "./startgg";
 
+export type CronLogTag = "stream-sync" | "calendar-sync" | "push-notify";
+export type CronLogStatus = "success" | "info" | "warning" | "error";
+
+export interface CronLogEntry {
+  id: string;
+  timestamp: string;
+  tag: CronLogTag;
+  status: CronLogStatus;
+  message: string;
+  error?: string | null;
+}
+
+export const CRON_LOGS_KEY = "cron_logs";
+export const MAX_CRON_LOGS = 250;
+
 export async function handleCronTrigger(event: ScheduledEvent, env: Env): Promise<void> {
   const cronPattern = event.cron;
   console.log(
@@ -25,7 +40,13 @@ export async function handleCronTrigger(event: ScheduledEvent, env: Env): Promis
 }
 
 export async function run60sStreamMatching(env: Env): Promise<void> {
-  console.log(`[Cron Worker] Triggered at ${new Date().toISOString()}`);
+  const logs: CronLogEntry[] = [];
+  recordLog(
+    logs,
+    "stream-sync",
+    "info",
+    `60s Stream Sync triggered at ${new Date().toISOString()}`,
+  );
 
   try {
     const db = createDb(env.DB);
@@ -46,11 +67,20 @@ export async function run60sStreamMatching(env: Env): Promise<void> {
       .map((g) => g.twitchId)
       .filter((id): id is string => typeof id === "string");
 
-    console.log(`[Cron Worker] Querying start.gg for ${startggGameIds.length} games...`);
+    recordLog(
+      logs,
+      "stream-sync",
+      "info",
+      `Querying start.gg for ${startggGameIds.length} games...`,
+    );
 
     const streamQueues = await fetchActiveStreamQueues(env, startggGameIds);
-    console.log(
-      `[Cron Worker] Retrieved ${streamQueues.length} active stream queues from start.gg.`,
+
+    recordLog(
+      logs,
+      "stream-sync",
+      "success",
+      `Retrieved ${streamQueues.length} active stream queues from start.gg.`,
     );
 
     const activeStreams = await fetchLiveStreamsByGame(env, twitchGameIds);
@@ -58,8 +88,12 @@ export async function run60sStreamMatching(env: Env): Promise<void> {
     const matchedStreams = matchStreams(activeStreams, streamQueues, activeEvents);
 
     await env.KV.put("live_streams", JSON.stringify(matchedStreams));
-    console.log(
-      `[Cron Worker] Matched ${matchedStreams.length} streams to active events and stored in KV.`,
+
+    recordLog(
+      logs,
+      "stream-sync",
+      "success",
+      `Matched ${matchedStreams.length} streams to active events and stored in KV.`,
     );
 
     // Check for active tournament streams and dispatch push alerts to event subscribers
@@ -81,17 +115,32 @@ export async function run60sStreamMatching(env: Env): Promise<void> {
           url: `/events`,
         });
 
+        recordLog(
+          logs,
+          "push-notify",
+          "info",
+          `Dispatched push alerts for live event: ${stream.matchedEvent.eventName}`,
+        );
+
         // Set 24-hour cooldown flag in KV to prevent duplicate notifications during the event
         await env.KV.put(alertKey, "1", { expirationTtl: 86400 });
       }
     }
   } catch (error) {
-    console.error(`[Cron Worker] 60s stream matching failed:`, error);
+    recordLog(logs, "stream-sync", "error", "60s stream matching failed", error);
+  } finally {
+    await flushCronLogs(env, logs);
   }
 }
 
 export async function run6HourCalendarSync(env: Env): Promise<void> {
-  console.log(`[Cron Worker] Triggered at ${new Date().toISOString()}`);
+  const logs: CronLogEntry[] = [];
+  recordLog(
+    logs,
+    "calendar-sync",
+    "info",
+    `6-hour Calendar Sync triggered at ${new Date().toISOString()}`,
+  );
 
   try {
     const db = createDb(env.DB);
@@ -103,10 +152,18 @@ export async function run6HourCalendarSync(env: Env): Promise<void> {
       .map((g) => g.startggId)
       .filter((id): id is number => typeof id === "number");
 
-    console.log(`[Cron Worker] Querying start.gg for ${startggVideogameIds.length} games...`);
+    recordLog(
+      logs,
+      "calendar-sync",
+      "info",
+      `Querying start.gg for ${startggVideogameIds.length} games...`,
+    );
     const upcomingTournaments = await fetchUpcomingTournaments(env, startggVideogameIds);
-    console.log(
-      `[Cron Worker] Retrieved ${upcomingTournaments.length} upcoming tournaments from start.gg.`,
+    recordLog(
+      logs,
+      "calendar-sync",
+      "success",
+      `Retrieved ${upcomingTournaments.length} upcoming tournaments from start.gg.`,
     );
 
     const processedEvents = formatTournaments(upcomingTournaments);
@@ -155,10 +212,26 @@ export async function run6HourCalendarSync(env: Env): Promise<void> {
       }
     }
 
+    recordLog(
+      logs,
+      "calendar-sync",
+      "success",
+      `Upserted ${processedEvents.length} tournaments and game relations to D1.`,
+    );
+
     await pruneExpiredSubscriptions(db);
     await pruneOldEvents(db);
+
+    recordLog(
+      logs,
+      "calendar-sync",
+      "info",
+      "Maintenance: Pruned expired subscriptions and outdated events.",
+    );
   } catch (error) {
-    console.error(`[Cron Worker] Calendar sync failed:`, error);
+    recordLog(logs, "calendar-sync", "error", "Calendar sync failed", error);
+  } finally {
+    await flushCronLogs(env, logs);
   }
 }
 
@@ -249,4 +322,42 @@ function getBracketUrlFromTournament(tournament: StartGGTournament): string | nu
       : `https://start.gg/tournament/${slug}`;
   }
   return null;
+}
+
+function recordLog(
+  batch: CronLogEntry[],
+  tag: CronLogTag,
+  status: CronLogStatus,
+  message: string,
+  error?: unknown,
+) {
+  console.log(`[${tag}][Cron Worker] ${message}`);
+  const errorMessage =
+    error instanceof Error
+      ? error.message
+      : error
+        ? String(error)
+        : null;
+
+  batch.push({
+    id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    timestamp: new Date().toISOString(),
+    tag,
+    status,
+    message,
+    error: errorMessage,
+  });
+}
+
+async function flushCronLogs(env: Env, newLogs: CronLogEntry[]): Promise<void> {
+  if (newLogs.length === 0) return;
+  try {
+    const existingLogs = (await env.KV.get(CRON_LOGS_KEY, "json")) as CronLogEntry[] | null;
+    const combined = [...newLogs, ...(existingLogs || [])].slice(0, MAX_CRON_LOGS);
+    await env.KV.put(CRON_LOGS_KEY, JSON.stringify(combined), {
+      expirationTtl: 86400 * 7,
+    });
+  } catch (err) {
+    console.error("[Cron Worker] Failed to flush logs to KV:", err);
+  }
 }
