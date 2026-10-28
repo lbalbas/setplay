@@ -1,9 +1,14 @@
-import { Link, useLocation } from "@tanstack/react-router";
-import { Bell, Search, Shield, Zap } from "lucide-react";
+import { getRouteApi, Link, useLocation } from "@tanstack/react-router";
+import { Search } from "lucide-react";
 import GameFilterBar from "./GameFilterBar";
+
+const rootRoute = getRouteApi("__root__");
+
 export default function Header() {
   const location = useLocation();
   const currentPath = location?.pathname || "/";
+  const { auth } = rootRoute.useRouteContext();
+  const isAuthenticated = auth?.isAuthenticated;
 
   return (
     <header className="sticky top-0 z-50 border-b bg-elevated/95 backdrop-blur-md">
@@ -40,7 +45,7 @@ export default function Header() {
 
         {/* User Actions */}
         <div className="flex items-center gap-3">
-          {/* Notification Bell */}
+          {/* Notification Bell
           <button
             type="button"
             className="relative rounded-full p-2 text-copy-primary/50 transition-colors hover:bg-white/5 hover:text-copy-primary"
@@ -53,23 +58,7 @@ export default function Header() {
               className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-accent shadow-[0_0_6px_rgba(255,242,130,0.9)]"
             />
           </button>
-
-          {/* Admin Pill */}
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1.5 rounded-full border bg-surface px-3 py-1.5 text-xs font-semibold text-copy-secondary transition-colors hover:border-accent-glow hover:text-copy-primary"
-          >
-            <Shield aria-hidden="true" className="h-3.5 w-3.5 text-copy-primary/50" />
-            <span>ADMIN</span>
-          </Link>
-
-          {/* User Profile Pill */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-accent-glow bg-surface p-1 pr-3 text-xs font-semibold text-white">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent font-bold text-black">
-              <Zap aria-hidden="true" className="h-3.5 w-3.5 fill-black" />
-            </span>
-            <span>NuckleDu</span>
-          </div>
+          */}
         </div>
       </div>
 
@@ -103,16 +92,18 @@ export default function Header() {
             >
               Events
             </Link>
-            <Link
-              to="/admin"
-              className={`relative py-1 transition-colors ${
-                currentPath.startsWith("/admin")
-                  ? "font-bold text-copy-primary after:absolute after:right-0 after:bottom-0 after:left-0 after:h-0.5 after:bg-accent"
-                  : "text-copy-primary/50 hover:text-copy-primary"
-              }`}
-            >
-              Admin
-            </Link>
+            {isAuthenticated && (
+              <Link
+                to="/admin"
+                className={`relative py-1 transition-colors ${
+                  currentPath === "/admin"
+                    ? "font-bold text-copy-primary after:absolute after:right-0 after:bottom-0 after:left-0 after:h-0.5 after:bg-accent"
+                    : "text-copy-primary/50 hover:text-copy-primary"
+                }`}
+              >
+                Admin
+              </Link>
+            )}
           </nav>
         </div>
       </div>

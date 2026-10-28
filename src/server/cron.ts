@@ -9,7 +9,7 @@ import { dispatchPushToEventSubscribers } from "./push";
 import type { Event } from "./db/schema";
 import type { StartGGTournament } from "./startgg";
 
-export type CronLogTag = "stream-sync" | "calendar-sync" | "push-notify";
+export type CronLogTag = "stream-sync" | "calendar-sync" | "push-notify" | "bracket-poll";
 export type CronLogStatus = "success" | "info" | "warning" | "error";
 
 export interface CronLogEntry {
@@ -332,15 +332,13 @@ function recordLog(
   error?: unknown,
 ) {
   console.log(`[${tag}][Cron Worker] ${message}`);
-  const errorMessage =
-    error instanceof Error
-      ? error.message
-      : error
-        ? String(error)
-        : null;
+  const errorMessage = error instanceof Error ? error.message : error ? String(error) : null;
 
   batch.push({
-    id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    id:
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
     timestamp: new Date().toISOString(),
     tag,
     status,

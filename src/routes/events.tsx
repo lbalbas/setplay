@@ -79,10 +79,6 @@ function EventPage() {
               <span className="text-xs text-copy-secondary">Total Events</span>
             </div>
             <div className="flex flex-col items-end">
-              <div className="font-serif text-2xl font-bold text-copy-primary">{"$600K+"}</div>
-              <span className="text-xs text-copy-secondary">Prize Pool Total</span>
-            </div>
-            <div className="flex flex-col items-end">
               <div className="font-serif text-2xl font-bold text-copy-primary">
                 {totalPlayers.toLocaleString()}
               </div>
@@ -282,72 +278,66 @@ function EventPage() {
                       year: "numeric",
                     }).formatRange(new Date(event.startDate), new Date(event.endDate))}
                   </span>
-                    <span className="flex items-center text-xs text-copy-secondary">
-                      <MapPin aria-hidden="true" className="h-3" />{" "}
-                      {event.isOnline ? "Online" : (event.location ?? "")}
-                    </span>
-                    <span className="flex items-center text-xs text-copy-secondary">
-                      <UsersRound aria-hidden="true" className="h-3" />
-                      {event.attendeeCount ? event.attendeeCount.toLocaleString() : ""}
-                    </span>
-                    <div className="flex flex-col items-end pt-2">
-                      <span className="font-serif text-lg font-bold text-copy-primary">
-                        {event.prizePool ? `$${event.prizePool.toLocaleString()}` : ""}
-                      </span>
-                      <span className="text-xs text-copy-secondary">prize pool</span>
-                    </div>
-                    <div className="mt-2 flex items-center justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => toggleSubscription(event.id)}
-                        disabled={isLoading(event.id)}
-                        title={
-                          isSubscribed(event.id)
-                            ? "Turn off notifications for this event"
-                            : "Notify me when this tournament goes live"
-                        }
-                        aria-label={
-                          isSubscribed(event.id)
-                            ? `Disable notifications for ${event.name}`
-                            : `Notify me when ${event.name} goes live`
-                        }
-                        className={`inline-flex cursor-pointer items-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-bold transition-all ${
-                          isSubscribed(event.id)
-                            ? "border-accent/50 bg-accent/15 text-accent shadow-[0_0_12px_rgba(255,242,130,0.15)]"
-                            : "border-line bg-elevated text-copy-secondary hover:border-accent/40 hover:text-copy-primary"
-                        }`}
-                      >
-                        {isLoading(event.id) ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : isSubscribed(event.id) ? (
-                          <>
-                            <BellRing className="h-3.5 w-3.5 text-accent" />
-                            <span>Notified</span>
-                          </>
-                        ) : (
-                          <>
-                            <Bell className="h-3.5 w-3.5" />
-                            <span>Notify Me</span>
-                          </>
-                        )}
+                  <span className="flex items-center text-xs text-copy-secondary">
+                    <MapPin aria-hidden="true" className="h-3" />{" "}
+                    {event.isOnline ? "Online" : (event.location ?? "")}
+                  </span>
+                  <span className="flex items-center text-xs text-copy-secondary">
+                    <UsersRound aria-hidden="true" className="h-3" />
+                    {event.attendeeCount ? event.attendeeCount.toLocaleString() : ""}
+                  </span>
+                  <div className="mt-2 flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleSubscription(event.id)}
+                      disabled={isLoading(event.id)}
+                      title={
+                        isSubscribed(event.id)
+                          ? "Turn off notifications for this event"
+                          : "Notify me when this tournament goes live"
+                      }
+                      aria-label={
+                        isSubscribed(event.id)
+                          ? `Disable notifications for ${event.name}`
+                          : `Notify me when ${event.name} goes live`
+                      }
+                      className={`inline-flex cursor-pointer items-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-bold transition-all ${
+                        isSubscribed(event.id)
+                          ? "border-accent/50 bg-accent/15 text-accent shadow-[0_0_12px_rgba(255,242,130,0.15)]"
+                          : "border-line bg-elevated text-copy-secondary hover:border-accent/40 hover:text-copy-primary"
+                      }`}
+                    >
+                      {isLoading(event.id) ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : isSubscribed(event.id) ? (
+                        <>
+                          <BellRing className="h-3.5 w-3.5 text-accent" />
+                          <span>Notified</span>
+                        </>
+                      ) : (
+                        <>
+                          <Bell className="h-3.5 w-3.5" />
+                          <span>Notify Me</span>
+                        </>
+                      )}
+                    </button>
+                    {event.status === "live" && (
+                      <button className="cursor-pointer rounded-2xl bg-accent px-3 py-2 text-xs font-bold">
+                        {"Watch Now >"}
                       </button>
-                      {event.status === "live" && (
-                        <button className="cursor-pointer rounded-2xl bg-accent px-3 py-2 text-xs font-bold">
-                          {"Watch Now >"}
+                    )}
+                    {event.bracketUrl && (
+                      <a href={event.bracketUrl} target="_blank" rel="noopener noreferrer">
+                        <button className="flex cursor-pointer items-center rounded-2xl bg-elevated py-2 pr-2 pl-4 text-xs font-bold text-copy-secondary">
+                          Bracket
+                          <SquareArrowOutUpRight aria-hidden="true" className="h-3" />
                         </button>
-                      )}
-                      {event.bracketUrl && (
-                        <a href={event.bracketUrl} target="_blank" rel="noopener noreferrer">
-                          <button className="flex cursor-pointer items-center rounded-2xl bg-elevated py-2 pr-2 pl-4 text-xs font-bold text-copy-secondary">
-                            Bracket
-                            <SquareArrowOutUpRight aria-hidden="true" className="h-3" />
-                          </button>
-                        </a>
-                      )}
-                    </div>
+                      </a>
+                    )}
                   </div>
                 </div>
-              ))
+              </div>
+            ))
           )}
         </div>
       </div>

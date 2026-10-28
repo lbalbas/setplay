@@ -11,9 +11,13 @@ import {
   Database,
   CheckCircle,
   AlertCircle,
+  Info,
 } from "lucide-react";
 import { getEvents } from "#/server/events";
 import type { MatchedStream } from "#/server/matching";
+import type { CronLogEntry } from "#/server/cron";
+import getLogs from "#/server/logs";
+import { useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/admin")({
   beforeLoad: ({ context }) => {
@@ -24,7 +28,10 @@ export const Route = createFileRoute("/admin")({
       });
     }
   },
-  loader: () => getEvents(),
+  loader: async () => {
+    const [events, logs] = await Promise.all([getEvents(), getLogs()]);
+    return { events, logs };
+  },
   component: AdminDashboard,
 });
 
@@ -39,14 +46,6 @@ interface StreamOverride {
   eventId: string | null;
   eventName: string | null;
   priority: PriorityLevel;
-}
-
-interface CronLogEntry {
-  id: string;
-  timestamp: string;
-  tag: "stream-sync" | "bracket-poll" | "push-notify";
-  status: "success" | "warning" | "error";
-  message: string;
 }
 
 /**
@@ -78,65 +77,6 @@ function buildInitialOverrides(streams: MatchedStream[]): Record<string, StreamO
   return overrides;
 }
 
-const MOCK_CRON_LOGS: CronLogEntry[] = [
-  {
-    id: "log_1",
-    timestamp: "10:47:01",
-    tag: "stream-sync",
-    status: "success",
-    message: "Synced 12 streams from Twitch API",
-  },
-  {
-    id: "log_2",
-    timestamp: "10:32:00",
-    tag: "stream-sync",
-    status: "success",
-    message: "Synced 11 streams from Twitch API",
-  },
-  {
-    id: "log_3",
-    timestamp: "10:17:00",
-    tag: "bracket-poll",
-    status: "success",
-    message: "Fetched bracket data for 3 active events",
-  },
-  {
-    id: "log_4",
-    timestamp: "10:02:01",
-    tag: "stream-sync",
-    status: "success",
-    message: "Synced 13 streams from Twitch API",
-  },
-  {
-    id: "log_5",
-    timestamp: "09:47:00",
-    tag: "push-notify",
-    status: "warning",
-    message: "Push delivery delayed 2.3s — queue backlog",
-  },
-  {
-    id: "log_6",
-    timestamp: "09:32:00",
-    tag: "stream-sync",
-    status: "success",
-    message: "Synced 10 streams from Twitch API",
-  },
-  {
-    id: "log_7",
-    timestamp: "09:17:00",
-    tag: "bracket-poll",
-    status: "error",
-    message: "start.gg API rate limit hit → retried in 30s",
-  },
-  {
-    id: "log_8",
-    timestamp: "09:02:00",
-    tag: "stream-sync",
-    status: "success",
-    message: "Synced 14 streams from Twitch API",
-  },
-];
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -156,7 +96,14 @@ type TabId = "streams" | "cron";
 
 function AdminDashboard() {
   const streams = useLiveStreams().data ?? [];
-  const events = Route.useLoaderData();
+  const { events, logs: initialLogs } = Route.useLoaderData();
+
+  const { data: logs = initialLogs } = useQuery({
+    queryKey: ["admin-cron-logs"],
+    queryFn: () => getLogs(),
+    initialData: initialLogs,
+    refetchInterval: activeTab === "cron" ? 15_000 : false,
+  });
 
   const [activeTab, setActiveTab] = useState<TabId>("streams");
   const [overrides, setOverrides] = useState<Record<string, StreamOverride>>(
@@ -455,51 +402,52 @@ function AdminDashboard() {
                   <Terminal aria-hidden="true" className="h-4 w-4" />
                   Cron Job Status Log
                 </h3>
-                <span className="text-xs text-copy-secondary">Last updated: 10:47 AM</span>
-              </div>
+                              </div>
 
               {/* Log entries */}
               <div className="divide-y divide-line/40">
-                {MOCK_CRON_LOGS.map((log) => (
-                  <div
-                    key={log.id}
-                    className={`flex items-center gap-4 px-5 py-3 ${
-                      log.status === "warning"
-                        ? "bg-yellow-500/5"
-                        : log.status === "error"
-                          ? "bg-red-500/5"
-                          : ""
-                    }`}
-                  >
-                    {/* Timestamp */}
-                    <span className="w-16 shrink-0 font-mono text-xs text-copy-secondary">
-                      {log.timestamp}
-                    </span>
-
-                    {/* Status icon */}
-                    <CronStatusIcon status={log.status} />
-
-                    {/* Tag */}
-                    <span
-                      className={`shrink-0 rounded px-2 py-0.5 font-mono text-xs font-bold ${cronTagStyle(log.tag)}`}
-                    >
-                      [{log.tag}]
-                    </span>
-
-                    {/* Message */}
-                    <span
-                      className={`text-sm ${
+                {logs
+                  .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                  .map((log) => (
+                    <div
+                      key={log.id}
+                      className={`flex items-center gap-4 px-5 py-3 ${
                         log.status === "warning"
-                          ? "text-yellow-400"
+                          ? "bg-yellow-500/5"
                           : log.status === "error"
-                            ? "text-red-400"
-                            : "text-copy-secondary"
+                            ? "bg-red-500/5"
+                            : ""
                       }`}
                     >
-                      {log.message}
-                    </span>
-                  </div>
-                ))}
+                      {/* Timestamp */}
+                      <span className="w-40 shrink-0 font-mono text-xs text-copy-secondary">
+                        {new Date(log.timestamp).toLocaleString()}
+                      </span>
+
+                      {/* Status icon */}
+                      <CronStatusIcon status={log.status} />
+
+                      {/* Tag */}
+                      <span
+                        className={`shrink-0 rounded px-2 py-0.5 font-mono text-xs font-bold ${cronTagStyle(log.tag)}`}
+                      >
+                        [{log.tag}]
+                      </span>
+
+                      {/* Message */}
+                      <span
+                        className={`text-sm ${
+                          log.status === "warning"
+                            ? "text-yellow-400"
+                            : log.status === "error"
+                              ? "text-red-400"
+                              : "text-copy-secondary"
+                        }`}
+                      >
+                        {log.message}
+                      </span>
+                    </div>
+                  ))}
               </div>
             </div>
           )}
@@ -568,6 +516,8 @@ function PriorityBadge({ priority }: { priority: PriorityLevel }) {
 
 function CronStatusIcon({ status }: { status: CronLogEntry["status"] }) {
   switch (status) {
+    case "info":
+      return <Info aria-hidden="true" className="h-4 w-4 shrink-0 text-blue-400" />;
     case "success":
       return <CheckCircle aria-hidden="true" className="h-4 w-4 shrink-0 text-green-400" />;
     case "warning":
@@ -585,5 +535,7 @@ function cronTagStyle(tag: CronLogEntry["tag"]): string {
       return "bg-purple-400/10 text-purple-400";
     case "push-notify":
       return "bg-yellow-400/10 text-yellow-400";
+    case "calendar-sync":
+      return "bg-blue-400/10 text-blue-400";
   }
 }
