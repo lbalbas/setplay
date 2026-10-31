@@ -21,7 +21,7 @@ export function GameFilterProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setSelectedGame(localStorage.getItem("setplay_game_filter") || "all");
   }, []);
-  
+
   return (
     <GameFilterContext.Provider value={{ selectedGame, setSelectedGame: handleSetGame }}>
       {children}

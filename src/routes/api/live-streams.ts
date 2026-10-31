@@ -19,9 +19,7 @@ export const Route = createFileRoute("/api/live-streams")({
 
         // Fallback if KV is not available (e.g. initial development before seed/KV populated)
         if (!env?.KV) {
-          console.warn(
-            "[/api/live-streams] KV not available. Serving fallback data.",
-          );
+          console.warn("[/api/live-streams] KV not available. Serving fallback data.");
           return Response.json([...MOCK_STREAMS], {
             headers: {
               "Content-Type": "application/json",

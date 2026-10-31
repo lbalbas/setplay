@@ -28,12 +28,8 @@
           "name": "event_games_event_id_events_id_fk",
           "tableFrom": "event_games",
           "tableTo": "events",
-          "columnsFrom": [
-            "event_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["event_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -41,22 +37,15 @@
           "name": "event_games_game_id_games_id_fk",
           "tableFrom": "event_games",
           "tableTo": "games",
-          "columnsFrom": [
-            "game_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["game_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "event_games_event_id_game_id_pk": {
-          "columns": [
-            "event_id",
-            "game_id"
-          ],
+          "columns": ["event_id", "game_id"],
           "name": "event_games_event_id_game_id_pk"
         }
       },
@@ -192,9 +181,7 @@
       "indexes": {
         "events_slug_unique": {
           "name": "events_slug_unique",
-          "columns": [
-            "slug"
-          ],
+          "columns": ["slug"],
           "isUnique": true
         }
       },
@@ -238,9 +225,7 @@
       "indexes": {
         "games_slug_unique": {
           "name": "games_slug_unique",
-          "columns": [
-            "slug"
-          ],
+          "columns": ["slug"],
           "isUnique": true
         }
       },
@@ -332,12 +317,8 @@
           "name": "subscription_interests_subscription_id_push_subscriptions_id_fk",
           "tableFrom": "subscription_interests",
           "tableTo": "push_subscriptions",
-          "columnsFrom": [
-            "subscription_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["subscription_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

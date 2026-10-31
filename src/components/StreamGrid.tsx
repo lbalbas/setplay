@@ -32,17 +32,14 @@ export default function StreamGrid({ selectedGame: propSelectedGame }: StreamGri
   const isGameMatch = (stream: MatchedStream) => {
     if (selectedGame === "all") return true;
 
-    const activeGame = rootGames?.find(
-      (g) => g.id === selectedGame || g.slug === selectedGame
-    );
+    const activeGame = rootGames?.find((g) => g.id === selectedGame || g.slug === selectedGame);
 
     if (activeGame) {
       return stream.gameId === activeGame.id || stream.gameName === activeGame.name;
     }
 
     return (
-      stream.gameId === selectedGame ||
-      stream.gameName.toLowerCase() === selectedGame.toLowerCase()
+      stream.gameId === selectedGame || stream.gameName.toLowerCase() === selectedGame.toLowerCase()
     );
   };
 

@@ -29,12 +29,7 @@ export const getEvents = createServerFn({ method: "GET" }).handler(async ({ cont
     .from(events)
     .leftJoin(eventGames, eq(events.id, eventGames.eventId))
     .leftJoin(games, eq(eventGames.gameId, games.id))
-    .where(
-      and(
-        gte(events.endDate, thirtyDaysAgo),
-        lte(events.startDate, oneYearFromNow),
-      ),
-    );
+    .where(and(gte(events.endDate, thirtyDaysAgo), lte(events.startDate, oneYearFromNow)));
 
   // Group many-to-many game relations per event
   const eventMap = new Map<
