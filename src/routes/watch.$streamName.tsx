@@ -20,6 +20,7 @@ import {
 import { MOCK_HEADLINE_STREAM, MOCK_STREAMS } from "#/mocks/data";
 import type { MatchedStream } from "#/server/matching";
 import { useLiveStreams } from "#/hooks/useLiveStreams";
+import { useHostName } from "#/hooks/useHostName";
 
 export const Route = createFileRoute("/watch/$streamName")({
   component: WatchView,
@@ -236,7 +237,7 @@ export function WatchView() {
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-linear-to-b from-[#FFF282] to-[#c8b900] text-xs font-bold shadow-sm">
                     🎮
                   </div>
-                  <span className="font-semibold text-copy-primary">{stream.channel}</span>
+                  <span className="font-semibold text-copy-primary">{stream.displayName}</span>
                   <span className="text-line">·</span>
                   <span>{stream.game}</span>
                 </div>
@@ -298,7 +299,7 @@ export function WatchView() {
         </div>
 
         {/* Right Pane: Live Chat Sidebar */}
-        {chatOpen && <ChatSidebar />}
+        {chatOpen && <ChatSidebar stream={stream} />}
       </div>
     </div>
   );
@@ -386,48 +387,19 @@ interface VideoPlayerProps {
 }
 
 function VideoPlayer({ stream, theaterMode }: VideoPlayerProps) {
+  const hostname = useHostName();
+
   return (
     <div
       className={`relative flex w-full items-center justify-center overflow-hidden bg-black transition-all duration-300 ${
         theaterMode ? "aspect-21/9" : "aspect-video"
       }`}
     >
-      {/* Visual Ambient Gradients */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_40%_55%,rgba(0,112,243,0.18)_0%,transparent_65%),radial-gradient(ellipse_at_75%_30%,rgba(255,242,130,0.06)_0%,transparent_50%)]" />
-
-      {/* Centered Play Trigger Button */}
-      <div className="relative z-10 flex h-20 w-20 items-center justify-center rounded-full border-2 border-accent/30 bg-accent/10 backdrop-blur-xs transition-transform duration-200 hover:scale-110">
-        <Play className="h-8 w-8 translate-x-0.5 fill-current text-accent/80" />
-      </div>
-
-      {/* Top Player Badges */}
-      <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4">
-        {/* LIVE Badge */}
-        <div className="inline-flex items-center gap-1.5 rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-extrabold tracking-wider text-black">
-          <span className="h-1.5 w-1.5 rounded-full bg-black" />
-          LIVE
-        </div>
-
-        {/* Viewer Count */}
-        <div className="inline-flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-0.5 text-xs font-bold text-white backdrop-blur-sm">
-          <Users className="h-3 w-3 text-copy-secondary" />
-          <span>{stream.viewers}</span>
-          <span className="text-[11px] font-normal text-copy-secondary">watching</span>
-        </div>
-      </div>
-
-      {/* Bottom Meta Overlay */}
-      <div className="absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/85 via-black/40 to-transparent px-4 pt-8 pb-3">
-        <div className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-accent uppercase">
-          <Trophy className="h-3 w-3 text-accent" />
-          <span>
-            {stream.eventName} · {stream.match}
-          </span>
-        </div>
-        <div className="font-serif text-lg font-bold tracking-tight text-white sm:text-xl">
-          {stream.title}
-        </div>
-      </div>
+      <iframe
+        src={`https://player.twitch.tv/?channel=${stream.channel}&parent=${hostname}&autoplay=true&muted=false`}
+        className="absolute inset-0 h-full w-full"
+        allowFullScreen
+      />
     </div>
   );
 }
@@ -531,72 +503,15 @@ function PushNotificationCard({ game, enabled, onToggle }: PushNotificationCardP
   );
 }
 
-function ChatSidebar() {
-  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_CHAT_MESSAGES);
-  const [chatInput, setChatInput] = useState("");
-
-  function handleSend(e: React.FormEvent) {
-    e.preventDefault();
-    if (!chatInput.trim()) return;
-
-    const now = new Date();
-    const time = `${now.getHours().toString().padStart(2, "0")}:${now
-      .getMinutes()
-      .toString()
-      .padStart(2, "0")}`;
-
-    setMessages((prev) => [...prev, { user: "You", msg: chatInput.trim(), time }]);
-    setChatInput("");
-  }
+function ChatSidebar({ stream }: { stream: ResolvedStream }) {
+  const hostname = useHostName();
 
   return (
     <aside className="flex w-72 shrink-0 flex-col border-l border-line bg-surface sm:w-80">
-      {/* Chat Header */}
-      <div className="flex items-center gap-2 border-b border-line p-3.5">
-        <MessageSquare className="h-3.5 w-3.5 text-accent" />
-        <span className="text-xs font-bold text-copy-primary sm:text-sm">Live Chat</span>
-        <span className="ml-auto text-[11px] text-copy-secondary">via Twitch</span>
-      </div>
-
-      {/* Message Feed */}
-      <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto p-3.5">
-        {messages.map((msg, i) => {
-          const hue = (msg.user.charCodeAt(0) * 37) % 360;
-          return (
-            <div key={`${msg.user}-${i}`} className="flex items-start gap-2">
-              <div
-                style={{ backgroundColor: `hsl(${hue}, 50%, 30%)` }}
-                className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
-              >
-                {msg.user[0]}
-              </div>
-              <div className="min-w-0 flex-1 leading-relaxed">
-                <span className="mr-1.5 text-[11px] font-bold text-accent">{msg.user}</span>
-                <span className="text-xs text-copy-primary">{msg.msg}</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Chat Input Bar */}
-      <form onSubmit={handleSend} className="border-t border-line p-3">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            placeholder="Send a message..."
-            className="flex-1 rounded-full border border-line bg-elevated px-3.5 py-1.5 text-xs text-copy-primary transition-colors outline-none placeholder:text-copy-secondary/50 focus:border-accent/40"
-          />
-          <button
-            type="submit"
-            className="cursor-pointer rounded-full bg-accent px-3.5 py-1.5 text-xs font-extrabold text-black transition-colors hover:bg-accent/90"
-          >
-            Send
-          </button>
-        </div>
-      </form>
+      <iframe
+        src={`https://www.twitch.tv/embed/${stream.channel}/chat?parent=${hostname}&darkpopout`}
+        className="h-full w-full"
+      />
     </aside>
   );
 }
