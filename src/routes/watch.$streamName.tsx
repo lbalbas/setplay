@@ -1,17 +1,12 @@
 import { useState, useMemo } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
-  Play,
   Maximize2,
   Minimize2,
   MessageSquare,
   ChevronLeft,
   ChevronRight,
-  Bell,
-  BellRing,
   ExternalLink,
-  Trophy,
-  Users,
   Share2,
   Bookmark,
   BookmarkCheck,
@@ -25,34 +20,6 @@ import { useHostName } from "#/hooks/useHostName";
 export const Route = createFileRoute("/watch/$streamName")({
   component: WatchView,
 });
-
-// ---------------------------------------------------------------------------
-// Mock Chat Data
-// ---------------------------------------------------------------------------
-
-interface ChatMessage {
-  user: string;
-  msg: string;
-  time: string;
-}
-
-const INITIAL_CHAT_MESSAGES: ChatMessage[] = [
-  { user: "SonicBoom99", msg: "LET'S GOOO TOKIDO", time: "10:42" },
-  { user: "FGCaddict", msg: "the comeback is real", time: "10:42" },
-  { user: "GuiltyGearHead", msg: "SF6 drive mechanics are insane this set", time: "10:43" },
-  { user: "TekkenGod", msg: "nuckledu looking shaky on the zoning", time: "10:43" },
-  { user: "EVO_Fan2026", msg: "biggest EVO crowd since 2019 🔥", time: "10:44" },
-  { user: "ComboBreaker", msg: "bracket predictions BLOWN", time: "10:44" },
-  { user: "StreetFighterFan", msg: "GRAND FINALS RESET!!!", time: "10:44" },
-  { user: "FightingGameMom", msg: "this is incredible", time: "10:45" },
-  { user: "CPT_Observer", msg: "tokido looks locked in", time: "10:45" },
-  { user: "DriveImpact", msg: "DP DP DP DP", time: "10:45" },
-  { user: "Kusoru", msg: "SF6 is so hype rn", time: "10:46" },
-  { user: "Hayabusa", msg: "that footsie game is CLEAN", time: "10:46" },
-  { user: "MomochiLvr", msg: "old heads stay winning 👏", time: "10:46" },
-  { user: "FGC_Lurker", msg: "Pog Pog Pog Pog", time: "10:47" },
-  { user: "BronzeNation", msg: "I can't believe I'm watching this live", time: "10:47" },
-];
 
 // ---------------------------------------------------------------------------
 // Stream Resolution Helper
@@ -156,7 +123,6 @@ export function resolveStream(
 export function WatchView() {
   const [theaterMode, setTheaterMode] = useState(false);
   const [chatOpen, setChatOpen] = useState(true);
-  const [pushEnabled, setPushEnabled] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
@@ -288,13 +254,6 @@ export function WatchView() {
 
             {/* Match Metadata Card */}
             <MatchMetaCard stream={stream} />
-
-            {/* Push Notifications Card */}
-            <PushNotificationCard
-              game={stream.game}
-              enabled={pushEnabled}
-              onToggle={() => setPushEnabled((prev) => !prev)}
-            />
           </div>
         </div>
 
@@ -425,80 +384,22 @@ function MatchMetaCard({ stream }: { stream: ResolvedStream }) {
         </div>
       ))}
 
-      <div className="flex flex-col">
-        <span className="mb-1 text-[11px] font-bold tracking-wider text-copy-secondary uppercase">
-          Bracket
-        </span>
-        <a
-          href={stream.bracketUrl ?? "#"}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-sm font-semibold text-accent transition-opacity hover:underline hover:opacity-90"
-        >
-          View on Start.gg
-          <ExternalLink className="h-3 w-3" />
-        </a>
-      </div>
-    </div>
-  );
-}
-
-interface PushNotificationCardProps {
-  game: string;
-  enabled: boolean;
-  onToggle: () => void;
-}
-
-function PushNotificationCard({ game, enabled, onToggle }: PushNotificationCardProps) {
-  return (
-    <div
-      className={`rounded-2xl p-5 transition-all duration-200 sm:p-6 ${
-        enabled ? "border border-success/30 bg-success/5" : "border border-line bg-surface"
-      }`}
-    >
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex flex-col gap-1.5">
-          <div className="flex flex-wrap items-center gap-2">
-            {enabled ? (
-              <BellRing className="h-4 w-4 text-success" />
-            ) : (
-              <Bell className="h-4 w-4 text-copy-secondary" />
-            )}
-            <span className="text-sm font-bold text-copy-primary sm:text-base">
-              Web Push Notifications
-            </span>
-            {enabled && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/15 px-2 py-0.5 text-[10px] font-bold tracking-wider text-success">
-                ● ACTIVE
-              </span>
-            )}
-          </div>
-          <p className="text-xs text-copy-secondary sm:text-sm">
-            {enabled
-              ? `You'll be notified when ${game} tournament streams go live or enter bracket stages.`
-              : `Get notified when ${game} streams go live, bracket stages start, or top 8 begins.`}
-          </p>
+      {stream.bracketUrl && (
+        <div className="flex flex-col">
+          <span className="mb-1 text-[11px] font-bold tracking-wider text-copy-secondary uppercase">
+            Bracket
+          </span>
+          <a
+            href={stream.bracketUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-accent transition-opacity hover:underline hover:opacity-90"
+          >
+            View on Start.gg
+            <ExternalLink className="h-3 w-3" />
+          </a>
         </div>
-
-        {/* Accessible Switch Toggle */}
-        <button
-          type="button"
-          role="switch"
-          aria-checked={enabled}
-          onClick={onToggle}
-          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-accent ${
-            enabled ? "border-success/40 bg-success" : "border-line bg-elevated"
-          }`}
-        >
-          <span
-            className={`inline-block h-4.5 w-4.5 rounded-full transition-transform duration-200 ${
-              enabled
-                ? "translate-x-5 translate-y-0.5 bg-black"
-                : "translate-x-1 translate-y-0.5 bg-copy-secondary"
-            }`}
-          />
-        </button>
-      </div>
+      )}
     </div>
   );
 }
