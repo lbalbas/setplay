@@ -95,8 +95,9 @@ type TabId = "streams" | "cron";
 // ---------------------------------------------------------------------------
 
 function AdminDashboard() {
-  const streams = useLiveStreams().data ?? [];
+  const [activeTab, setActiveTab] = useState<TabId>("streams");
   const { events, logs: initialLogs } = Route.useLoaderData();
+  const streams = useLiveStreams().data ?? [];
 
   const { data: logs = initialLogs } = useQuery({
     queryKey: ["admin-cron-logs"],
@@ -105,7 +106,6 @@ function AdminDashboard() {
     refetchInterval: activeTab === "cron" ? 15_000 : false,
   });
 
-  const [activeTab, setActiveTab] = useState<TabId>("streams");
   const [overrides, setOverrides] = useState<Record<string, StreamOverride>>(
     buildInitialOverrides(streams),
   );
@@ -402,7 +402,7 @@ function AdminDashboard() {
                   <Terminal aria-hidden="true" className="h-4 w-4" />
                   Cron Job Status Log
                 </h3>
-                              </div>
+              </div>
 
               {/* Log entries */}
               <div className="divide-y divide-line/40">

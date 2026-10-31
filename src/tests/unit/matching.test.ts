@@ -13,6 +13,7 @@ const MOCK_EVENTS: Event[] = [
     source: "start_gg",
     startggSlug: "tournament/evo-2026",
     startDate: new Date("2026-07-11T12:00:00Z"),
+    bracketUrl: "https://start.gg/tournament/evo-2026",
     endDate: new Date("2026-07-13T23:59:59Z"),
     region: "NA",
     isOnline: false,
@@ -30,6 +31,7 @@ const MOCK_EVENTS: Event[] = [
     description: "Combo Breaker",
     slug: "combo-breaker-2026",
     source: "start_gg",
+    bracketUrl: "https://start.gg/tournament/combo-breaker-2026",
     startggSlug: "tournament/combo-breaker-2026",
     startDate: new Date("2026-05-22T12:00:00Z"),
     endDate: new Date("2026-05-25T23:59:59Z"),
@@ -179,7 +181,7 @@ describe("4-Layer Matching Engine", () => {
     const results = matchStreams(
       [casualHighViewers, tournamentLayer3, tournamentLayer1],
       queue,
-      MOCK_EVENTS
+      MOCK_EVENTS,
     );
 
     expect(results).toHaveLength(3);

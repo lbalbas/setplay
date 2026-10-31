@@ -13,7 +13,7 @@ import {
   isBefore,
 } from "date-fns";
 import { Link } from "@tanstack/react-router";
-import type { EventWithGames } from "../mocks/data";
+import type { EventWithGames } from "#/server/events";
 
 const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const today = new Date();
@@ -21,6 +21,7 @@ const today = new Date();
 interface EventCalendarProps {
   events: EventWithGames[];
 }
+
 export default function EventCalendar({ events = [] }: EventCalendarProps) {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [viewDate, setViewDate] = useState(new Date());

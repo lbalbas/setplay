@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   Play,
@@ -17,13 +17,9 @@ import {
   BookmarkCheck,
   Check,
 } from "lucide-react";
-import {
-  MOCK_HEADLINE_STREAM,
-  MOCK_STREAMS,
-  MOCK_EVENTS,
-  type MockStream,
-  type HeadlineFeaturedStream,
-} from "#/mocks/data";
+import { MOCK_HEADLINE_STREAM, MOCK_STREAMS } from "#/mocks/data";
+import type { MatchedStream } from "#/server/matching";
+import { useLiveStreams } from "#/hooks/useLiveStreams";
 
 export const Route = createFileRoute("/watch/$streamName")({
   component: WatchView,
@@ -60,66 +56,96 @@ const INITIAL_CHAT_MESSAGES: ChatMessage[] = [
 // ---------------------------------------------------------------------------
 // Stream Resolution Helper
 // ---------------------------------------------------------------------------
-
-interface ResolvedStream {
+export interface ResolvedStream {
   id: string;
+  channel: string; // Twitch login handle needed for iframe embed (e.g. "capcomfighters")
+  displayName: string; // Display name for headers (e.g. "CapcomFighters")
   title: string;
-  channel: string;
   game: string;
+  gameId: string;
   viewers: string;
+  rawViewerCount: number;
   eventName: string;
   eventId: string | null;
   bracketUrl: string | null;
-  priority: string;
+  priority: "Headline" | "Featured" | "Standard";
   match: string;
   stage: string;
+  isLive: boolean;
 }
 
-function resolveStream(streamName?: string): ResolvedStream {
-  const allStreams: (MockStream | HeadlineFeaturedStream)[] = [
-    MOCK_HEADLINE_STREAM,
-    ...MOCK_STREAMS,
-  ];
-
-  const matched = streamName
-    ? allStreams.find(
-        (s) =>
-          s.id.toLowerCase() === streamName.toLowerCase() ||
-          s.channelName.toLowerCase() === streamName.toLowerCase() ||
-          s.displayName.toLowerCase() === streamName.toLowerCase(),
-      )
-    : null;
-
-  const stream = matched ?? MOCK_HEADLINE_STREAM;
-  const matchingEvent = stream.eventId ? MOCK_EVENTS.find((e) => e.id === stream.eventId) : null;
-
-  const bracketUrlString = matchingEvent?.bracketUrl ?? null;
-
-  const priority =
-    matchingEvent?.featuredPriority === "headline" || stream.id === MOCK_HEADLINE_STREAM.id
-      ? "Headline"
-      : stream.type === "tournament"
-        ? "Featured"
-        : "Standard";
-
-  const match =
-    stream.matchMetadata ?? (stream.type === "tournament" ? "Tournament Pool" : "Live Gameplay");
-
-  const stage = stream.type === "tournament" ? "🔴 In Progress" : "🟢 Live Broadcast";
-
-  return {
-    id: stream.id,
-    title: stream.title,
-    channel: stream.displayName,
-    game: stream.gameName,
-    viewers: stream.viewerCount.toLocaleString(),
-    eventName: stream.eventName ?? matchingEvent?.name ?? "FGC Live Broadcast",
-    eventId: stream.eventId,
-    bracketUrl: bracketUrlString,
-    priority,
-    match,
-    stage,
-  };
+export function resolveStream(
+  streamIdentifier?: string,
+  liveStreams?: MatchedStream[],
+): ResolvedStream | null {
+  if (!streamIdentifier) return null;
+  const cleanId = decodeURIComponent(streamIdentifier).toLowerCase();
+  // 1. Search active live streams from KV/API
+  const liveMatch = liveStreams?.find(
+    (s) =>
+      s.id.toLowerCase() === cleanId ||
+      s.streamName.toLowerCase() === cleanId ||
+      s.displayName.toLowerCase() === cleanId,
+  );
+  if (liveMatch) {
+    const isHeadline =
+      liveMatch.streamType === "tournament" && liveStreams?.[0]?.id === liveMatch.id;
+    return {
+      id: liveMatch.id,
+      channel: liveMatch.streamName, // Key for Twitch embed: ?channel=${channel}
+      displayName: liveMatch.displayName,
+      title: liveMatch.title,
+      game: liveMatch.gameName,
+      gameId: liveMatch.gameId,
+      viewers: liveMatch.viewerCount.toLocaleString(),
+      rawViewerCount: liveMatch.viewerCount,
+      eventName: liveMatch.matchedEvent?.eventName ?? "FGC Live Broadcast",
+      eventId: liveMatch.matchedEvent?.eventId ?? null,
+      bracketUrl:
+        liveMatch.bracketUrl ??
+        (liveMatch.matchedEvent?.startggSlug
+          ? `https://start.gg/${liveMatch.matchedEvent.startggSlug}`
+          : null),
+      priority: isHeadline
+        ? "Headline"
+        : liveMatch.streamType === "tournament"
+          ? "Featured"
+          : "Standard",
+      match: liveMatch.streamType === "tournament" ? "Tournament Pool" : "Live Gameplay",
+      stage:
+        liveMatch.stageName ??
+        (liveMatch.streamType === "tournament" ? "🔴 In Progress" : "🟢 Live Broadcast"),
+      isLive: true,
+    };
+  }
+  // 2. Dev / Offline Fallback to Mock Data (if not in live list)
+  const allMocks = [MOCK_HEADLINE_STREAM, ...MOCK_STREAMS];
+  const mockMatch = allMocks.find(
+    (s) =>
+      s.id.toLowerCase() === cleanId ||
+      s.channelName.toLowerCase() === cleanId ||
+      s.displayName.toLowerCase() === cleanId,
+  );
+  if (mockMatch) {
+    return {
+      id: mockMatch.id,
+      channel: mockMatch.channelName,
+      displayName: mockMatch.displayName,
+      title: mockMatch.title,
+      game: mockMatch.gameName,
+      gameId: mockMatch.gameId,
+      viewers: mockMatch.viewerCount.toLocaleString(),
+      rawViewerCount: mockMatch.viewerCount,
+      eventName: mockMatch.eventName ?? "FGC Live Broadcast",
+      eventId: mockMatch.eventId ?? null,
+      bracketUrl: "bracketUrl" in mockMatch ? ((mockMatch.bracketUrl as string) ?? null) : null,
+      priority: mockMatch.id === MOCK_HEADLINE_STREAM.id ? "Headline" : "Standard",
+      match: mockMatch.matchMetadata ?? "Live Gameplay",
+      stage: mockMatch.type === "tournament" ? "🔴 In Progress" : "🟢 Live Broadcast",
+      isLive: false,
+    };
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -127,22 +153,55 @@ function resolveStream(streamName?: string): ResolvedStream {
 // ---------------------------------------------------------------------------
 
 export function WatchView() {
-  const { streamName } = Route.useParams();
-  const navigate = useNavigate();
-  const stream = resolveStream(streamName);
-
   const [theaterMode, setTheaterMode] = useState(false);
   const [chatOpen, setChatOpen] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
+  const { streamName } = Route.useParams();
+  const navigate = useNavigate();
+  // 1. Fetch live streams from KV cache
+  const { data: streams, isLoading } = useLiveStreams();
+  // 2. Pure memoized resolution
+  const stream = useMemo(() => resolveStream(streamName, streams), [streamName, streams]);
   function handleShare() {
     if (typeof window !== "undefined" && navigator.clipboard) {
       navigator.clipboard.writeText(window.location.href);
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     }
+  }
+  // 3. Loading state
+  if (isLoading && !streams) {
+    return (
+      <div className="flex min-h-[calc(100vh-97px)] items-center justify-center bg-base">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+          <p className="text-sm font-semibold text-copy-secondary">
+            Connecting to live broadcast...
+          </p>
+        </div>
+      </div>
+    );
+  }
+  // 4. Stream Offline / Not Found state
+  if (!stream) {
+    return (
+      <div className="flex min-h-[calc(100vh-97px)] flex-col items-center justify-center bg-base p-6 text-center">
+        <h2 className="font-serif text-2xl font-bold text-copy-primary">Stream Offline</h2>
+        <p className="mt-2 max-w-md text-sm text-copy-secondary">
+          The channel <span className="font-mono text-accent">"{streamName}"</span> is not currently
+          broadcasting or could not be found.
+        </p>
+        <button
+          onClick={() => navigate({ to: "/" })}
+          className="mt-6 rounded-full bg-accent px-5 py-2 text-xs font-bold text-black hover:bg-accent/90"
+        >
+          Return to Live Streams
+        </button>
+      </div>
+    );
   }
 
   return (

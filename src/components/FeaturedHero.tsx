@@ -1,6 +1,7 @@
 import { Play, Trophy, ExternalLink } from "lucide-react";
 import { useLiveStreams } from "#/hooks/useLiveStreams";
 import { getTwitchThumbnail } from "#/utils/formatThumbnail";
+import { Link } from "@tanstack/react-router";
 
 export default function FeaturedHero() {
   const streams = useLiveStreams().data ?? [];
@@ -99,13 +100,19 @@ export default function FeaturedHero() {
 
         {/* CTA Buttons */}
         <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            className="flex w-full items-center justify-center gap-2 rounded-full border border-accent bg-accent/10 py-3 text-sm font-bold text-accent transition-all duration-200 hover:bg-accent hover:text-base"
+          <Link
+            params={{ streamName: headlineStream.streamName }}
+            to={`/watch/$streamName`}
+            className="w-full"
           >
-            <Play aria-hidden="true" className="h-4 w-4 fill-current" />
-            Watch Now
-          </button>
+            <button
+              type="button"
+              className="flex w-full items-center justify-center gap-2 rounded-full border border-accent bg-accent/10 py-3 text-sm font-bold text-accent transition-all duration-200 hover:bg-accent hover:text-base"
+            >
+              <Play aria-hidden="true" className="h-4 w-4 fill-current" />
+              Watch Now
+            </button>
+          </Link>
 
           {headlineStream.bracketUrl && (
             <a

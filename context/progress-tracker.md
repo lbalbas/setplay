@@ -43,6 +43,8 @@
 - **Unified Background Cron Logging in KV**: Implemented structured, non-overwriting logging buffer (`cron_logs` in Cloudflare KV) across both `run60sStreamMatching` and `run6HourCalendarSync` with unique IDs, error string extraction, and a 250-entry rolling window via `finally` flush.
 - **Admin Dashboard Live Logs Integration**: Connected `getLogs` server function to read KV `cron_logs`, wired parallel route loader in `/admin` with `Promise.all([getEvents(), getLogs()])`, added 15-second background polling via TanStack Query when the "Cron Logs" tab is active, and rendered live timestamped entries with status badges.
 - **Admin Navigation Guard in Header**: Conditionally rendered `/admin` navigation link in `Header.tsx` based on `auth.isAuthenticated` resolved from `getRouteApi('__root__').useRouteContext()`.
+- **Phase 1 Fixes & Codebase Cleanup**: Resolved `activeTab` Temporal Dead Zone runtime crash in `src/routes/admin.tsx`, linked `FeaturedHero` CTA to the dynamic watch route, fixed `EventWithGames` import in `EventCalendar`, strictly typed `placeholderData` in `useLiveStreams`, and added missing `bracketUrl` fixture properties to `matching.test.ts`. Formatted codebase with `oxfmt`.
+- **Dynamic Watch Stream Resolution (Phase 2 part 1)**: Integrated `useLiveStreams` hook into `src/routes/watch.$streamName.tsx` via memoized `resolveStream` utility, supporting both Twitch usernames (`streamName`) and stream IDs (`id`) from KV live streams with fallback to offline/mock data, and handled live connecting/offline UI states.
 
 ## In Progress
 
