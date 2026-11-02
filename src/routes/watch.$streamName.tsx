@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   Maximize2,
@@ -132,6 +132,7 @@ export function WatchView() {
   const { data: streams, isLoading } = useLiveStreams();
   // 2. Pure memoized resolution
   const stream = useMemo(() => resolveStream(streamName, streams), [streamName, streams]);
+
   function handleShare() {
     if (typeof window !== "undefined" && navigator.clipboard) {
       navigator.clipboard.writeText(window.location.href);
@@ -139,6 +140,30 @@ export function WatchView() {
       setTimeout(() => setIsCopied(false), 2000);
     }
   }
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      // Avoid triggering when user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key.toLowerCase() === "t") {
+        setTheaterMode((prev) => !prev);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    if (theaterMode) {
+      document.body.classList.add("theater-mode");
+    } else {
+      document.body.classList.remove("theater-mode");
+    }
+    return () => {
+      document.body.classList.remove("theater-mode");
+    };
+  }, [theaterMode]);
+
   // 3. Loading state
   if (isLoading && !streams) {
     return (
@@ -172,7 +197,12 @@ export function WatchView() {
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-97px)] flex-col bg-base font-sans">
+    <div
+      className={`flex flex-col overflow-hidden bg-base font-sans ${
+        theaterMode ? "h-dvh" : "h-[calc(100dvh-var(--header-height,65px))]"
+      }`}
+    >
+      {" "}
       {/* Top Breadcrumbs & Control Bar */}
       <WatchNav
         game={stream.game}
@@ -183,16 +213,20 @@ export function WatchView() {
         onToggleChat={() => setChatOpen((prev) => !prev)}
         onBack={() => navigate({ to: "/" })}
       />
-
       {/* Main Split Layout */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left Pane: Video Player + Details */}
-        <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
+        <div
+          className={`flex min-w-0 flex-1 flex-col overflow-y-auto ${
+            theaterMode ? "snap-y snap-mandatory" : ""
+          }`}
+        >
           {/* Player Container */}
-          <VideoPlayer stream={stream} theaterMode={theaterMode} />
-
+          <div className={theaterMode ? "h-full w-full shrink-0 snap-start" : ""}>
+            <VideoPlayer stream={stream} theaterMode={theaterMode} />
+          </div>
           {/* Under-Player Metadata & Actions */}
-          <div className="flex flex-col gap-6 p-5 sm:p-6 lg:p-8">
+          <div className="flex shrink-0 flex-col gap-6 p-5 sm:p-6 lg:p-8">
             {/* Title & Action Buttons */}
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
               <div>
@@ -288,7 +322,7 @@ function WatchNav({
   onBack,
 }: WatchNavProps) {
   return (
-    <div className="flex items-center gap-3 border-b border-line bg-surface px-5 py-2.5">
+    <div className="flex h-12 items-center gap-3 border-b border-line bg-surface px-5 py-2.5">
       <button
         type="button"
         onClick={onBack}
@@ -350,13 +384,13 @@ function VideoPlayer({ stream, theaterMode }: VideoPlayerProps) {
 
   return (
     <div
-      className={`relative flex w-full items-center justify-center overflow-hidden bg-black transition-all duration-300 ${
-        theaterMode ? "aspect-21/9" : "aspect-video"
+      className={`relative w-full shrink-0 bg-black transition-all duration-200 ${
+        theaterMode ? "aspect-auto h-full min-h-[60vh] lg:min-h-full" : "aspect-video max-h-[75vh]"
       }`}
     >
       <iframe
         src={`https://player.twitch.tv/?channel=${stream.channel}&parent=${hostname}&autoplay=true&muted=false`}
-        className="absolute inset-0 h-full w-full"
+        className="absolute inset-0 h-full w-full border-0"
         allowFullScreen
       />
     </div>
@@ -408,10 +442,10 @@ function ChatSidebar({ stream }: { stream: ResolvedStream }) {
   const hostname = useHostName();
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col border-l border-line bg-surface sm:w-80">
+    <aside className="flex h-full w-72 shrink-0 flex-col overflow-hidden border-l border-line bg-surface sm:w-80 lg:w-88">
       <iframe
         src={`https://www.twitch.tv/embed/${stream.channel}/chat?parent=${hostname}&darkpopout`}
-        className="h-full w-full"
+        className="h-full w-full border-0"
       />
     </aside>
   );

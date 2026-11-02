@@ -49,3 +49,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+body.theater-mode header,
+body.theater-mode footer {
+  display: none;
+}

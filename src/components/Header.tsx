@@ -9,6 +9,7 @@ export default function Header() {
   const currentPath = location?.pathname || "/";
   const { auth } = rootRoute.useRouteContext();
   const isAuthenticated = auth?.isAuthenticated;
+  const isWatchPage = currentPath.startsWith("/watch");
 
   return (
     <header className="sticky top-0 z-50 border-b bg-elevated/95 backdrop-blur-md">
@@ -44,69 +45,52 @@ export default function Header() {
         </div>
 
         {/* User Actions */}
-        <div className="flex items-center gap-3">
-          {/* Notification Bell
-          <button
-            type="button"
-            className="relative rounded-full p-2 text-copy-primary/50 transition-colors hover:bg-white/5 hover:text-copy-primary"
-            title="Notifications"
-            aria-label="Notifications"
+        <nav className="flex shrink-0 items-center gap-5 text-xs font-semibold">
+          <Link
+            to="/"
+            className={`relative py-1 transition-colors ${
+              currentPath === "/"
+                ? "font-bold text-copy-primary after:absolute after:right-0 after:bottom-0 after:left-0 after:h-0.5 after:bg-accent"
+                : "text-copy-primary/50 hover:text-copy-primary"
+            }`}
           >
-            <Bell aria-hidden="true" className="h-4 w-4" />
-            <span
-              aria-hidden="true"
-              className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-accent shadow-[0_0_6px_rgba(255,242,130,0.9)]"
-            />
-          </button>
-          */}
-        </div>
+            Streams
+          </Link>
+          <Link
+            to="/events"
+            className={`relative py-1 transition-colors ${
+              currentPath === "/events"
+                ? "font-bold text-copy-primary after:absolute after:right-0 after:bottom-0 after:left-0 after:h-0.5 after:bg-accent"
+                : "text-copy-primary/50 hover:text-copy-primary"
+            }`}
+          >
+            Events
+          </Link>
+          {isAuthenticated && (
+            <Link
+              to="/admin"
+              className={`relative py-1 transition-colors ${
+                currentPath === "/admin"
+                  ? "font-bold text-copy-primary after:absolute after:right-0 after:bottom-0 after:left-0 after:h-0.5 after:bg-accent"
+                  : "text-copy-primary/50 hover:text-copy-primary"
+              }`}
+            >
+              Admin
+            </Link>
+          )}
+        </nav>
       </div>
-
       {/* Sub-header Bar: Game Filters & Nav Links */}
-      <div className="border-t border-accent-glow bg-surface">
-        <div className="mx-auto flex w-11/12 max-w-screen-2xl items-center justify-between py-2">
-          {/* Game Filter Bar */}
-          <div className="mr-4 min-w-0 flex-1">
-            <GameFilterBar />
+      {!isWatchPage && (
+        <div className="border-t border-accent-glow bg-surface">
+          <div className="mx-auto flex w-11/12 max-w-screen-2xl items-center justify-between py-2">
+            {/* Game Filter Bar */}
+            <div className="mr-4 min-w-0 flex-1">
+              <GameFilterBar />
+            </div>
           </div>
-
-          {/* Nav Links (Right Side) */}
-          <nav className="flex shrink-0 items-center gap-5 text-xs font-semibold">
-            <Link
-              to="/"
-              className={`relative py-1 transition-colors ${
-                currentPath === "/"
-                  ? "font-bold text-copy-primary after:absolute after:right-0 after:bottom-0 after:left-0 after:h-0.5 after:bg-accent"
-                  : "text-copy-primary/50 hover:text-copy-primary"
-              }`}
-            >
-              Streams
-            </Link>
-            <Link
-              to="/events"
-              className={`relative py-1 transition-colors ${
-                currentPath === "/events"
-                  ? "font-bold text-copy-primary after:absolute after:right-0 after:bottom-0 after:left-0 after:h-0.5 after:bg-accent"
-                  : "text-copy-primary/50 hover:text-copy-primary"
-              }`}
-            >
-              Events
-            </Link>
-            {isAuthenticated && (
-              <Link
-                to="/admin"
-                className={`relative py-1 transition-colors ${
-                  currentPath === "/admin"
-                    ? "font-bold text-copy-primary after:absolute after:right-0 after:bottom-0 after:left-0 after:h-0.5 after:bg-accent"
-                    : "text-copy-primary/50 hover:text-copy-primary"
-                }`}
-              >
-                Admin
-              </Link>
-            )}
-          </nav>
         </div>
-      </div>
+      )}
     </header>
   );
 }
