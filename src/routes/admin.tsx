@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useLiveStreams } from "#/hooks/useLiveStreams";
 import {
   Shield,
@@ -12,28 +12,128 @@ import {
   CheckCircle,
   AlertCircle,
   Info,
+  Lock,
+  LogOut,
+  KeyRound,
+  Loader2,
 } from "lucide-react";
 import { getEvents } from "#/server/events";
 import type { MatchedStream } from "#/server/matching";
 import type { CronLogEntry } from "#/server/cron";
 import getLogs from "#/server/logs";
+import { loginAdmin, logoutAdmin } from "#/server/auth";
 import { useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/admin")({
-  beforeLoad: ({ context }) => {
+  loader: async ({ context }) => {
     if (!context.auth.isAuthenticated) {
-      throw redirect({
-        to: "/",
-        search: { redirect: "/admin" },
-      });
+      return { events: [], logs: [], isAuthenticated: false };
     }
-  },
-  loader: async () => {
     const [events, logs] = await Promise.all([getEvents(), getLogs()]);
-    return { events, logs };
+    return { events, logs, isAuthenticated: true };
   },
-  component: AdminDashboard,
+  component: AdminPage,
 });
+
+function AdminPage() {
+  const { isAuthenticated } = Route.useLoaderData();
+
+  if (!isAuthenticated) {
+    return <AdminGate />;
+  }
+
+  return <AdminDashboard />;
+}
+
+function AdminGate() {
+  const router = useRouter();
+  const [token, setToken] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token.trim()) return;
+
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      const res = await loginAdmin({ data: { token: token.trim() } });
+      if (res.success) {
+        // Invalidate router context so __root beforeLoad and /admin loader re-evaluate
+        await router.invalidate();
+      } else {
+        setError(res.error || "Invalid administrator credentials");
+      }
+    } catch (err: any) {
+      setError(err?.message || "Failed to authenticate");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <main className="flex min-h-[calc(100vh-140px)] items-center justify-center p-4">
+      <div className="w-full max-w-sm rounded-2xl border border-line bg-surface p-8 shadow-2xl">
+        <div className="flex flex-col items-center text-center">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-accent/20 bg-accent/10 text-accent">
+            <Lock className="h-6 w-6" />
+          </div>
+          <h1 className="font-serif text-xl font-bold tracking-tight text-copy-primary">
+            Admin Access Required
+          </h1>
+          <p className="mt-1 text-xs text-copy-secondary">
+            Enter your secret administrative token to access system overrides and logs.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="token" className="text-xs font-semibold text-copy-secondary">
+              Secret Token
+            </label>
+            <div className="relative">
+              <KeyRound className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-copy-secondary/50" />
+              <input
+                id="token"
+                type="password"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                placeholder="••••••••••••••••"
+                required
+                autoFocus
+                className="w-full rounded-xl border border-line bg-elevated py-2.5 pr-4 pl-9 text-xs text-copy-primary placeholder-copy-secondary/40 outline-none transition-colors focus:border-accent"
+              />
+            </div>
+          </div>
+
+          {error && (
+            <div className="flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 p-2.5 text-xs text-red-400">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-xs font-bold text-black transition-colors hover:bg-accent/90 disabled:opacity-50"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Verifying...
+              </>
+            ) : (
+              "Authorize Session"
+            )}
+          </button>
+        </form>
+      </div>
+    </main>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Admin-specific types (overrides layered on top of MockStream)
@@ -95,9 +195,15 @@ type TabId = "streams" | "cron";
 // ---------------------------------------------------------------------------
 
 function AdminDashboard() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabId>("streams");
   const { events, logs: initialLogs } = Route.useLoaderData();
   const streams = useLiveStreams().data ?? [];
+
+  const handleLogout = async () => {
+    await logoutAdmin();
+    await router.invalidate();
+  };
 
   const { data: logs = initialLogs } = useQuery({
     queryKey: ["admin-cron-logs"],
@@ -170,13 +276,24 @@ function AdminDashboard() {
                 Stream Management Dashboard
               </h1>
             </div>
-            <button
-              type="button"
-              className="flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-surface px-4 py-2 text-sm font-semibold text-copy-primary transition-colors hover:border-accent hover:bg-elevated"
-            >
-              <RefreshCw aria-hidden="true" className="h-4 w-4" />
-              Sync Streams
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                className="flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-surface px-4 py-2 text-sm font-semibold text-copy-primary transition-colors hover:border-accent hover:bg-elevated"
+              >
+                <RefreshCw aria-hidden="true" className="h-4 w-4" />
+                Sync Streams
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-2 text-sm font-semibold text-red-400 transition-colors hover:border-red-500/40 hover:bg-red-500/10"
+                title="End administrator session"
+              >
+                <LogOut aria-hidden="true" className="h-4 w-4" />
+                <span>Lock</span>
+              </button>
+            </div>
           </div>
 
           {/* Stats row */}
