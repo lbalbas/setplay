@@ -6,8 +6,11 @@ import { Link } from "@tanstack/react-router";
 export default function FeaturedHero() {
   const streams = useLiveStreams().data ?? [];
   // Priority: first matched tournament stream, otherwise the stream with highest viewer count
-  const headlineStream = streams.find((s) => s.streamType === "tournament") || streams[0] || null;
-
+  const headlineStream =
+    streams.find((s) => s.priority === "headline") ||
+    streams.find((s) => s.streamType === "tournament") ||
+    streams[0] ||
+    null;
   if (!headlineStream) return null;
 
   const thumbnailUrl = getTwitchThumbnail(headlineStream.thumbnailUrl, 1280, 720);

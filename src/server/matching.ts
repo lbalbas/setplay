@@ -35,6 +35,7 @@ export interface MatchedEventInfo {
  * Normalized live stream object output by the matching engine.
  * Cached in Cloudflare KV ('live_streams') and consumed by the frontend.
  */
+export type StreamPriority = "headline" | "featured" | "normal";
 export interface MatchedStream {
   id: string; // Twitch stream ID
   streamName: string; // Twitch user_login (cleaned lowercase handle, e.g. "capcomfighters")
@@ -50,6 +51,7 @@ export interface MatchedStream {
   matchedEvent: MatchedEventInfo | null;
   bracketUrl?: string | null; // e.g. "https://start.gg/tournament/evo-2026"
   stageName?: string | null; // e.g. "Top 8", "Grand Finals", "Pools"
+  priority?: StreamPriority;
 }
 
 // Map event slug keywords to known organizer Twitch channel handles (all lowercase)
