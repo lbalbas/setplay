@@ -8,6 +8,7 @@ import { matchStreams } from "./matching";
 import { dispatchPushToEventSubscribers } from "./push";
 import type { Event } from "./db/schema";
 import type { StartGGTournament } from "./startgg";
+import type { StreamOverridesMap } from "./overrides";
 
 export type CronLogTag = "stream-sync" | "calendar-sync" | "push-notify" | "bracket-poll";
 export type CronLogStatus = "success" | "info" | "warning" | "error";
@@ -86,7 +87,55 @@ export async function run60sStreamMatching(env: Env): Promise<void> {
     const activeStreams = await fetchLiveStreamsByGame(env, twitchGameIds);
 
     const matchedStreams = matchStreams(activeStreams, streamQueues, activeEvents);
+    const overrides =
+      ((await env.KV.get("stream_overrides", "json")) as StreamOverridesMap | null) ?? {};
+    let overridesModified = false;
 
+    const now = Date.now();
+    for (const [key, record] of Object.entries(overrides)) {
+      if (record.expiresAt && record.expiresAt < now) {
+        delete overrides[key];
+        overridesModified = true;
+      }
+    }
+    for (const target of matchedStreams) {
+      const data = overrides[target.id] || overrides[target.streamName];
+      if (!data) continue;
+      if (data.streamSessionStartedAt && target.startedAt !== data.streamSessionStartedAt) {
+        delete overrides[target.id];
+        delete overrides[target.streamName];
+        overridesModified = true;
+        continue;
+      }
+      target.priority = data.priority;
+      if (data.eventId) {
+        const activeEvent = activeEvents.find((e) => e.id === data.eventId);
+        target.streamType = "tournament";
+        target.matchedEvent = {
+          eventId: data.eventId,
+          eventName: data.eventName ?? activeEvent?.name ?? "Tournament",
+          eventSlug: activeEvent?.slug ?? target.matchedEvent?.eventSlug ?? "",
+          startggSlug: activeEvent?.startggSlug ?? target.matchedEvent?.startggSlug,
+          matchSource: "channel_registry",
+          confidence: 1.0,
+        };
+      } else {
+        target.streamType = "casual";
+        target.matchedEvent = null;
+      }
+    }
+
+    matchedStreams.sort((a, b) => {
+      if (a.priority === "headline") return -1;
+      if (b.priority === "headline") return 1;
+      if (a.priority === "featured" && b.priority !== "featured") return -1;
+      if (b.priority === "featured" && a.priority !== "featured") return 1;
+      return b.viewerCount - a.viewerCount;
+    });
+
+    if (overridesModified) {
+      await env.KV.put("stream_overrides", JSON.stringify(overrides));
+    }
     await env.KV.put("live_streams", JSON.stringify(matchedStreams));
 
     recordLog(
