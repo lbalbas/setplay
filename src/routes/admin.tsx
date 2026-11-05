@@ -17,20 +17,30 @@ import {
   KeyRound,
   Loader2,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { getEvents } from "#/server/events";
-import type { MatchedStream } from "#/server/matching";
+import type { MatchedStream, StreamPriority } from "#/server/matching";
 import type { CronLogEntry } from "#/server/cron";
 import getLogs from "#/server/logs";
 import { loginAdmin, logoutAdmin } from "#/server/auth";
 import { useQuery } from "@tanstack/react-query";
+import {
+  getStreamOverrides,
+  saveStreamOverride,
+  type OverrideDurationOption,
+} from "#/server/overrides";
 
 export const Route = createFileRoute("/admin")({
   loader: async ({ context }) => {
     if (!context.auth.isAuthenticated) {
-      return { events: [], logs: [], isAuthenticated: false };
+      return { events: [], logs: [], overrides: {}, isAuthenticated: false };
     }
-    const [events, logs] = await Promise.all([getEvents(), getLogs()]);
-    return { events, logs, isAuthenticated: true };
+    const [events, logs, overrides] = await Promise.all([
+      getEvents(),
+      getLogs(),
+      getStreamOverrides(),
+    ]);
+    return { events, logs, isAuthenticated: true, overrides };
   },
   component: AdminPage,
 });
@@ -103,7 +113,7 @@ function AdminGate() {
                 placeholder="••••••••••••••••"
                 required
                 autoFocus
-                className="w-full rounded-xl border border-line bg-elevated py-2.5 pr-4 pl-9 text-xs text-copy-primary placeholder-copy-secondary/40 outline-none transition-colors focus:border-accent"
+                className="w-full rounded-xl border border-line bg-elevated py-2.5 pr-4 pl-9 text-xs text-copy-primary placeholder-copy-secondary/40 transition-colors outline-none focus:border-accent"
               />
             </div>
           </div>
@@ -148,35 +158,6 @@ interface StreamOverride {
   priority: PriorityLevel;
 }
 
-/**
- * Derive initial overrides from MOCK_STREAMS.
- * Tournament streams that already have an eventId get "featured" priority;
- * the headline stream (the one with the highest viewer count that's linked)
- * gets "headline". Everything else is "normal".
- */
-function buildInitialOverrides(streams: MatchedStream[]): Record<string, StreamOverride> {
-  const overrides: Record<string, StreamOverride> = {};
-
-  // Find the top-linked stream to mark as headline
-  const linkedStreams = streams.filter((s) => s.matchedEvent?.eventId !== null);
-  const topLinked = linkedStreams.sort((a, b) => b.viewerCount - a.viewerCount)[0];
-
-  for (const stream of streams) {
-    let priority: PriorityLevel = "normal";
-    if (stream.matchedEvent?.eventId !== null) {
-      priority = stream.id === topLinked?.id ? "headline" : "featured";
-    }
-
-    overrides[stream.id] = {
-      eventId: stream.matchedEvent?.eventId ?? null,
-      eventName: stream.matchedEvent?.eventName ?? null,
-      priority,
-    };
-  }
-
-  return overrides;
-}
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -197,8 +178,9 @@ type TabId = "streams" | "cron";
 function AdminDashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabId>("streams");
-  const { events, logs: initialLogs } = Route.useLoaderData();
+  const { events, logs: initialLogs, overrides = {} } = Route.useLoaderData();
   const streams = useLiveStreams().data ?? [];
+  const queryClient = useQueryClient();
 
   const handleLogout = async () => {
     await logoutAdmin();
@@ -212,44 +194,48 @@ function AdminDashboard() {
     refetchInterval: activeTab === "cron" ? 15_000 : false,
   });
 
-  const [overrides, setOverrides] = useState<Record<string, StreamOverride>>(
-    buildInitialOverrides(streams),
-  );
   const [editingStreamId, setEditingStreamId] = useState<string | null>(null);
 
   // Sidebar form state
   const [selectedEventId, setSelectedEventId] = useState("");
   const [selectedPriority, setSelectedPriority] = useState<PriorityLevel>("normal");
-
+  const [selectedDurationOption, setSelectedDurationOption] = useState<
+    "event_end" | "stream_session" | "4h" | "12h" | "24h"
+  >("event_end");
   // Derived stats
   const activeCount = streams.length;
-  const linkedCount = streams.filter((s) => overrides[s.id]?.eventId !== null).length;
-  const headlineCount = streams.filter((s) => overrides[s.id]?.priority === "headline").length;
-
+  const linkedCount = streams.filter((s) => s.matchedEvent?.eventId != null).length;
+  const headlineCount = streams.filter((s) => s.priority === "headline").length;
   const editingStream = streams.find((s) => s.id === editingStreamId) ?? null;
 
   function handleEdit(stream: MatchedStream) {
     const override = overrides[stream.id];
     setEditingStreamId(stream.id);
-    setSelectedEventId(override?.eventId ?? "");
-    setSelectedPriority(override?.priority ?? "normal");
+    setSelectedEventId(override?.eventId ?? stream.matchedEvent?.eventId ?? "");
+    setSelectedPriority(override?.priority ?? stream.priority ?? "normal");
+    setSelectedDurationOption("4h");
   }
 
-  function handleApplyLink() {
+  async function handleApplyOverride() {
     if (!editingStreamId) return;
+    const stream = streams.find((s) => s.id === editingStreamId);
+    if (!stream) return;
 
-    const linkedEvent = events.find((e) => e.id === selectedEventId);
-
-    setOverrides((prev) => ({
-      ...prev,
-      [editingStreamId]: {
+    await saveStreamOverride({
+      data: {
+        streamId: editingStreamId,
+        streamName: stream.displayName,
+        durationOption: selectedDurationOption,
         eventId: selectedEventId || null,
-        eventName: linkedEvent ? linkedEvent.name : null,
+        streamStartedAt: stream.startedAt,
         priority: selectedPriority,
       },
-    }));
+    });
 
-    // Reset editing state
+    await queryClient.invalidateQueries({ queryKey: ["live-streams"] });
+
+    await router.invalidate();
+
     setEditingStreamId(null);
     setSelectedEventId("");
     setSelectedPriority("normal");
@@ -372,10 +358,12 @@ function AdminDashboard() {
                     </thead>
                     <tbody>
                       {streams.map((stream) => {
-                        const override = overrides[stream.id];
-                        const isLinked = Boolean(override?.eventId);
-                        const priority = override?.priority ?? "normal";
+                        const override = overrides[stream.id] || overrides[stream.streamName];
 
+                        const priority = stream.priority ?? override?.priority ?? "normal";
+
+                        const eventId = stream.matchedEvent?.eventId ?? override?.eventId;
+                        const isLinked = Boolean(eventId);
                         return (
                           <tr
                             key={stream.id}
@@ -460,45 +448,61 @@ function AdminDashboard() {
                           onChange={(e) => setSelectedEventId(e.target.value)}
                           className="cursor-pointer rounded-lg border border-line bg-elevated px-3 py-2 text-sm text-copy-primary transition-colors outline-none focus:border-accent"
                         >
-                          <option value="">Select an event...</option>
-                          {events.map((ev) => (
-                            <option key={ev.id} value={ev.id}>
-                              {ev.name}
-                            </option>
-                          ))}
+                          <option value="">No Event (Casual / Unlinked)</option>
+                          <optgroup label="Active & Upcoming Events">
+                            {events.map((ev) => (
+                              <option key={ev.id} value={ev.id}>
+                                {ev.name}
+                              </option>
+                            ))}
+                          </optgroup>
                         </select>
                       </div>
 
                       {/* Priority Level */}
                       <div className="flex flex-col gap-1.5">
-                        <span className="text-[11px] font-bold tracking-wider text-copy-secondary uppercase">
+                        <label className="text-[11px] font-bold tracking-wider text-copy-secondary uppercase">
                           Priority Level
-                        </span>
-                        <div className="flex gap-1.5">
-                          {(["headline", "featured", "normal"] as const).map((level) => (
-                            <button
-                              key={level}
-                              type="button"
-                              onClick={() => setSelectedPriority(level)}
-                              className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold uppercase transition-colors ${
-                                selectedPriority === level
-                                  ? "border border-accent bg-accent/20 text-accent"
-                                  : "border border-line bg-elevated text-copy-secondary hover:text-copy-primary"
-                              }`}
-                            >
-                              {level}
-                            </button>
-                          ))}
-                        </div>
+                        </label>
+                        <select
+                          value={selectedPriority}
+                          onChange={(e) => setSelectedPriority(e.target.value as StreamPriority)}
+                          className="cursor-pointer rounded-lg border border-line bg-elevated px-3 py-2 text-sm text-copy-primary transition-colors outline-none focus:border-accent"
+                        >
+                          <option value="">Select a priority...</option>
+                          <option value="headline">Headline</option>
+                          <option value="featured">Featured</option>
+                          <option value="normal">Normal</option>
+                        </select>
+                      </div>
+
+                      {/* Duration Option */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[11px] font-bold tracking-wider text-copy-secondary uppercase">
+                          Override Duration
+                        </label>
+                        <select
+                          value={selectedDurationOption}
+                          onChange={(e) =>
+                            setSelectedDurationOption(e.target.value as OverrideDurationOption)
+                          }
+                          className="cursor-pointer rounded-lg border border-line bg-elevated px-3 py-2 text-sm text-copy-primary transition-colors outline-none focus:border-accent"
+                        >
+                          {selectedEventId && <option value="event_end">Until Event Ends</option>}
+                          <option value="stream_session">Until Stream Ends (Session Anchor)</option>
+                          <option value="4h">4 Hours</option>
+                          <option value="12h">12 Hours</option>
+                          <option value="24h">24 Hours</option>
+                        </select>
                       </div>
 
                       {/* Apply */}
                       <button
                         type="button"
-                        onClick={handleApplyLink}
+                        onClick={handleApplyOverride}
                         className="mt-1 cursor-pointer rounded-lg bg-elevated px-4 py-2.5 text-sm font-bold tracking-wide text-copy-primary uppercase transition-colors hover:bg-accent hover:text-base"
                       >
-                        Apply Link
+                        Apply Override
                       </button>
                     </div>
                   ) : (

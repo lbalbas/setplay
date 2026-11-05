@@ -84,7 +84,7 @@ export const saveStreamOverride = createServerFn({ method: "POST" })
     if (data.priority === "headline") {
       for (const key of Object.keys(overrides)) {
         if (overrides[key].priority === "headline" && key !== data.streamId) {
-          overrides[key].priority = "featured"; // Demote previous headline
+          overrides[key].priority = "normal";
         }
       }
     }
@@ -128,6 +128,15 @@ export const saveStreamOverride = createServerFn({ method: "POST" })
             if (b.priority === "featured" && a.priority !== "featured") return 1;
             return b.viewerCount - a.viewerCount;
           });
+
+          // If the new override is headline, demote any other headline streams to normal
+          if (data.priority === "headline") {
+            for (const s of streams) {
+              if (s.priority === "headline" && s.id !== data.streamId) {
+                s.priority = "normal";
+              }
+            }
+          }
           await env.KV.put("live_streams", JSON.stringify(streams));
         }
       } catch (err) {
