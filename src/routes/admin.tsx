@@ -146,19 +146,6 @@ function AdminGate() {
 }
 
 // ---------------------------------------------------------------------------
-// Admin-specific types (overrides layered on top of MockStream)
-// ---------------------------------------------------------------------------
-
-type PriorityLevel = "headline" | "featured" | "normal";
-
-/** Admin overrides for a single stream, keyed by stream.id */
-interface StreamOverride {
-  eventId: string | null;
-  eventName: string | null;
-  priority: PriorityLevel;
-}
-
-// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -198,7 +185,7 @@ function AdminDashboard() {
 
   // Sidebar form state
   const [selectedEventId, setSelectedEventId] = useState("");
-  const [selectedPriority, setSelectedPriority] = useState<PriorityLevel>("normal");
+  const [selectedPriority, setSelectedPriority] = useState<StreamPriority>("normal");
   const [selectedDurationOption, setSelectedDurationOption] = useState<
     "event_end" | "stream_session" | "4h" | "12h" | "24h"
   >("event_end");
@@ -621,8 +608,8 @@ function TabButton({
   );
 }
 
-function PriorityBadge({ priority }: { priority: PriorityLevel }) {
-  const styles: Record<PriorityLevel, string> = {
+function PriorityBadge({ priority }: { priority: StreamPriority }) {
+  const styles: Record<StreamPriority, string> = {
     headline: "text-accent",
     featured: "text-green-400",
     normal: "text-copy-secondary",
