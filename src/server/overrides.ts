@@ -1,24 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { checkAdminAuth } from "./auth";
-import z from "zod";
+import { z } from "zod";
 import { getWorkerEnv } from "./env";
 import { createDb, events } from "./db";
 import { eq } from "drizzle-orm";
-import type { StreamPriority, MatchedStream } from "./matching";
+import { PRIORITY_WEIGHT, StreamPrioritySchema } from "./matching";
+import type { MatchedStream } from "./matching";
 export type OverrideDurationOption = "event_end" | "stream_session" | "4h" | "12h" | "24h";
 
-export interface StreamOverrideRecord {
-  eventId: string | null;
-  eventName: string | null;
-  priority: StreamPriority;
-  createdAt: number;
-  expiresAt: number | null;
-  streamSessionStartedAt?: string | null;
-}
-
-export type StreamOverridesMap = Record<string, StreamOverrideRecord>;
-
-export const StreamPrioritySchema = z.enum(["headline", "featured", "normal"]);
 export const OverrideDurationOptionSchema = z.enum([
   "event_end",
   "stream_session",
@@ -26,6 +15,16 @@ export const OverrideDurationOptionSchema = z.enum([
   "12h",
   "24h",
 ]);
+
+export const StreamOverrideRecordSchema = z.object({
+  eventId: z.string().nullish(),
+  eventName: z.string().nullish(),
+  priority: StreamPrioritySchema,
+  createdAt: z.number(),
+  expiresAt: z.number().nullish(),
+  streamSessionStartedAt: z.string().nullish(),
+});
+export const StreamOverridesMapSchema = z.record(z.string(), StreamOverrideRecordSchema);
 
 const overrideInput = z.object({
   streamId: z.string().min(1),
@@ -35,6 +34,9 @@ const overrideInput = z.object({
   durationOption: OverrideDurationOptionSchema,
   streamStartedAt: z.string().min(1),
 });
+
+export type StreamOverrideRecord = z.infer<typeof StreamOverrideRecordSchema>;
+export type StreamOverridesMap = z.infer<typeof StreamOverridesMapSchema>;
 
 export const saveStreamOverride = createServerFn({ method: "POST" })
   .validator((data: z.infer<typeof overrideInput>) => overrideInput.parse(data))
@@ -55,31 +57,24 @@ export const saveStreamOverride = createServerFn({ method: "POST" })
     if (data.durationOption === "4h") expiresAt = now + 4 * 60 * 60 * 1000;
     else if (data.durationOption === "12h") expiresAt = now + 12 * 60 * 60 * 1000;
     else if (data.durationOption === "24h") expiresAt = now + 24 * 60 * 60 * 1000;
-    else if (data.durationOption === "event_end") {
-      if (data.eventId && env.DB) {
-        const db = createDb(env.DB);
-        const [ev] = await db
-          .select({ endDate: events.endDate })
-          .from(events)
-          .where(eq(events.id, data.eventId));
-        expiresAt = ev?.endDate ? new Date(ev.endDate).getTime() : now + 24 * 60 * 60 * 1000;
-      } else {
-        expiresAt = now + 24 * 60 * 60 * 1000;
-      }
-    }
 
     let eventName: string | null = null;
     if (data.eventId && env.DB) {
       const db = createDb(env.DB);
       const [ev] = await db
-        .select({ name: events.name })
+        .select({ name: events.name, endDate: events.endDate })
         .from(events)
         .where(eq(events.id, data.eventId));
+
       eventName = ev?.name ?? null;
+      if (data.durationOption === "event_end") {
+        expiresAt = ev?.endDate ? new Date(ev.endDate).getTime() : now + 24 * 60 * 60 * 1000;
+      }
+    } else if (data.durationOption === "event_end") {
+      expiresAt = now + 24 * 60 * 60 * 1000;
     }
 
-    const overrides =
-      ((await env.KV.get("stream_overrides", "json")) as StreamOverridesMap | null) ?? {};
+    const overrides = await getOverridesFromKV(env.KV);
 
     if (data.priority === "headline") {
       for (const key of Object.keys(overrides)) {
@@ -132,10 +127,10 @@ export const saveStreamOverride = createServerFn({ method: "POST" })
 
           // Re-sort: headline first, then featured, then viewer count
           streams.sort((a, b) => {
-            if (a.priority === "headline") return -1;
-            if (b.priority === "headline") return 1;
-            if (a.priority === "featured" && b.priority !== "featured") return -1;
-            if (b.priority === "featured" && a.priority !== "featured") return 1;
+            const weightDiff =
+              (PRIORITY_WEIGHT[b.priority ?? "normal"] ?? 1) -
+              (PRIORITY_WEIGHT[a.priority ?? "normal"] ?? 1);
+            if (weightDiff !== 0) return weightDiff;
             return b.viewerCount - a.viewerCount;
           });
 
@@ -162,8 +157,7 @@ export const removeStreamOverride = createServerFn({ method: "POST" })
     if (!authenticated) throw new Error("Unauthorized");
     if (!env?.KV) throw new Error("KV binding not available");
 
-    const overrides =
-      ((await env.KV.get("stream_overrides", "json")) as StreamOverridesMap | null) ?? {};
+    const overrides = await getOverridesFromKV(env.KV);
 
     if (overrides[data.streamId]) {
       delete overrides[data.streamId];
@@ -179,15 +173,17 @@ export const removeStreamOverride = createServerFn({ method: "POST" })
         if (target) {
           target.priority = "normal";
           streams.sort((a, b) => {
-            if (a.priority === "headline") return -1;
-            if (b.priority === "headline") return 1;
-            if (a.priority === "featured" && b.priority !== "featured") return -1;
-            if (b.priority === "featured" && a.priority !== "featured") return 1;
+            const weightDiff =
+              (PRIORITY_WEIGHT[b.priority ?? "normal"] ?? 1) -
+              (PRIORITY_WEIGHT[a.priority ?? "normal"] ?? 1);
+            if (weightDiff !== 0) return weightDiff;
             return b.viewerCount - a.viewerCount;
           });
           await env.KV.put("live_streams", JSON.stringify(streams));
         }
-      } catch {}
+      } catch (err) {
+        console.error("[removeStreamOverride] Error hot-patching live_streams:", err);
+      }
     }
 
     return { success: true };
@@ -199,7 +195,28 @@ export const getStreamOverrides = createServerFn({ method: "GET" }).handler(
     const { authenticated } = await checkAdminAuth(context);
     if (!authenticated || !env?.KV) return {};
 
-    const overrides = (await env.KV.get("stream_overrides", "json")) as StreamOverridesMap | null;
+    const overrides = await getOverridesFromKV(env.KV);
     return overrides ?? {};
   },
 );
+
+export async function getOverridesFromKV(kv: KVNamespace): Promise<StreamOverridesMap> {
+  try {
+    const raw = await kv.get("stream_overrides", "json");
+    if (!raw) return {};
+
+    const parsed = StreamOverridesMapSchema.safeParse(raw);
+    if (parsed.success) {
+      return parsed.data;
+    }
+
+    console.warn(
+      "[getOverridesFromKV] Invalid schema in KV, falling back to empty map:",
+      parsed.error,
+    );
+    return {};
+  } catch (err) {
+    console.error("[getOverridesFromKV] Failed reading overrides from KV:", err);
+    return {};
+  }
+}

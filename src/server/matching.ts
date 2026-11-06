@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { Event } from "./db/schema";
 import type { StartGGStreamQueueItem } from "./startgg";
 import type { TwitchStream } from "./twitch";
@@ -35,7 +36,14 @@ export interface MatchedEventInfo {
  * Normalized live stream object output by the matching engine.
  * Cached in Cloudflare KV ('live_streams') and consumed by the frontend.
  */
-export type StreamPriority = "headline" | "featured" | "normal";
+export const StreamPrioritySchema = z.enum(["headline", "featured", "normal"]);
+export type StreamPriority = z.infer<typeof StreamPrioritySchema>;
+export const PRIORITY_WEIGHT: Record<StreamPriority, number> = {
+  headline: 3,
+  featured: 2,
+  normal: 1,
+};
+
 export interface MatchedStream {
   id: string; // Twitch stream ID
   streamName: string; // Twitch user_login (cleaned lowercase handle, e.g. "capcomfighters")

@@ -1,14 +1,14 @@
 import { createDb } from "./db";
-import { games, events, eventGames, pushSubscriptions } from "./db/schema";
-import { lt, lte, gte, gt, eq, and, sql } from "drizzle-orm";
+import { games, events, eventGames, pushSubscriptions, subscriptionInterests } from "./db/schema";
+import { lt, lte, gte, gt, eq, and, sql, inArray } from "drizzle-orm";
 import type { Env } from "./db";
 import { fetchLiveStreamsByGame } from "./twitch";
 import { fetchActiveStreamQueues, fetchUpcomingTournaments } from "./startgg";
-import { matchStreams } from "./matching";
+import { matchStreams, PRIORITY_WEIGHT } from "./matching";
 import { dispatchPushToEventSubscribers } from "./push";
+import { getOverridesFromKV } from "./overrides";
 import type { Event } from "./db/schema";
 import type { StartGGTournament } from "./startgg";
-import type { StreamOverridesMap } from "./overrides";
 
 export type CronLogTag = "stream-sync" | "calendar-sync" | "push-notify" | "bracket-poll";
 export type CronLogStatus = "success" | "info" | "warning" | "error";
@@ -87,8 +87,7 @@ export async function run60sStreamMatching(env: Env): Promise<void> {
     const activeStreams = await fetchLiveStreamsByGame(env, twitchGameIds);
 
     const matchedStreams = matchStreams(activeStreams, streamQueues, activeEvents);
-    const overrides =
-      ((await env.KV.get("stream_overrides", "json")) as StreamOverridesMap | null) ?? {};
+    const overrides = await getOverridesFromKV(env.KV);
     let overridesModified = false;
 
     const now = Date.now();
@@ -99,11 +98,10 @@ export async function run60sStreamMatching(env: Env): Promise<void> {
       }
     }
     for (const target of matchedStreams) {
-      const data = overrides[target.id] || overrides[target.streamName];
+      const data = overrides[target.id];
       if (!data) continue;
       if (data.streamSessionStartedAt && target.startedAt !== data.streamSessionStartedAt) {
         delete overrides[target.id];
-        delete overrides[target.streamName];
         overridesModified = true;
         continue;
       }
@@ -126,10 +124,10 @@ export async function run60sStreamMatching(env: Env): Promise<void> {
     }
 
     matchedStreams.sort((a, b) => {
-      if (a.priority === "headline") return -1;
-      if (b.priority === "headline") return 1;
-      if (a.priority === "featured" && b.priority !== "featured") return -1;
-      if (b.priority === "featured" && a.priority !== "featured") return 1;
+      const weightDiff =
+        (PRIORITY_WEIGHT[b.priority ?? "normal"] ?? 1) -
+        (PRIORITY_WEIGHT[a.priority ?? "normal"] ?? 1);
+      if (weightDiff !== 0) return weightDiff;
       return b.viewerCount - a.viewerCount;
     });
 
@@ -361,6 +359,18 @@ async function pruneOldEvents(db: ReturnType<typeof createDb>): Promise<void> {
       `[Cron Worker] Maintenance: Pruned ${toDelete.length} outdated or far-future events.`,
     );
   }
+
+  const toDeleteIds = toDelete.map((e) => e.id);
+  await db
+    .delete(subscriptionInterests)
+    .where(
+      and(
+        eq(subscriptionInterests.interestType, "event"),
+        inArray(subscriptionInterests.targetId, toDeleteIds),
+      ),
+    );
+  // 2. Delete events (eventGames will automatically cascade)
+  await db.delete(events).where(inArray(events.id, toDeleteIds));
 }
 
 function getBracketUrlFromTournament(tournament: StartGGTournament): string | null {
