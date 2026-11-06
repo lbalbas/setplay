@@ -6,8 +6,6 @@
 
 ## Current Goal
 
-- Secure `/admin` with `ADMIN_TOKEN` verification and connect manual override forms to D1/KV.
-
 ## Completed
 
 - **Project Scaffolding**: Initialized TanStack Start with Vite, TypeScript, and Tailwind CSS v4.
@@ -46,15 +44,14 @@
 - **Phase 1 Fixes & Codebase Cleanup**: Resolved `activeTab` Temporal Dead Zone runtime crash in `src/routes/admin.tsx`, linked `FeaturedHero` CTA to the dynamic watch route, fixed `EventWithGames` import in `EventCalendar`, strictly typed `placeholderData` in `useLiveStreams`, and added missing `bracketUrl` fixture properties to `matching.test.ts`. Formatted codebase with `oxfmt`.
 - **Dynamic Watch Stream Resolution (Phase 2 part 1)**: Integrated `useLiveStreams` hook into `src/routes/watch.$streamName.tsx` via memoized `resolveStream` utility, supporting both Twitch usernames (`streamName`) and stream IDs (`id`) from KV live streams with fallback to offline/mock data, and handled live connecting/offline UI states.
 - **Admin In-Place Gate & Session Management**: Implemented `loginAdmin` and `logoutAdmin` server functions in `src/server/auth.ts` with `HttpOnly` cookie generation. Replaced unconditional `/admin` redirect with a sleek in-place `AdminGate` component, protecting sensitive logs/events from loading when unauthenticated and triggering client-side `router.invalidate()` upon successful authorization. Added dashboard "Lock" button.
+- **Admin Security & Overrides**: Secure `/admin` with `ADMIN_TOKEN` verification and connect manual override forms to D1/KV.
+- Implement Theather view for live streams.
 
 ## In Progress
 
-- **Admin Security & Overrides**:
-   - Secure `/admin` with `ADMIN_TOKEN` verification and connect manual override forms to D1/KV.
 
 ## Next Up
 
-- Implement Theather view for live streams.
 - Add Playwright E2E verification test suite.
 
 ## Open Questions
