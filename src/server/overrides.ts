@@ -120,14 +120,6 @@ export const saveStreamOverride = createServerFn({ method: "POST" })
             target.streamType = "casual";
             target.matchedEvent = null;
           }
-          // Re-sort: headline first, then featured, then viewer count
-          streams.sort((a, b) => {
-            if (a.priority === "headline") return -1;
-            if (b.priority === "headline") return 1;
-            if (a.priority === "featured" && b.priority !== "featured") return -1;
-            if (b.priority === "featured" && a.priority !== "featured") return 1;
-            return b.viewerCount - a.viewerCount;
-          });
 
           // If the new override is headline, demote any other headline streams to normal
           if (data.priority === "headline") {
@@ -137,6 +129,16 @@ export const saveStreamOverride = createServerFn({ method: "POST" })
               }
             }
           }
+
+          // Re-sort: headline first, then featured, then viewer count
+          streams.sort((a, b) => {
+            if (a.priority === "headline") return -1;
+            if (b.priority === "headline") return 1;
+            if (a.priority === "featured" && b.priority !== "featured") return -1;
+            if (b.priority === "featured" && a.priority !== "featured") return 1;
+            return b.viewerCount - a.viewerCount;
+          });
+
           await env.KV.put("live_streams", JSON.stringify(streams));
         }
       } catch (err) {
@@ -176,6 +178,13 @@ export const removeStreamOverride = createServerFn({ method: "POST" })
         const target = streams.find((s) => s.id === data.streamId);
         if (target) {
           target.priority = "normal";
+          streams.sort((a, b) => {
+            if (a.priority === "headline") return -1;
+            if (b.priority === "headline") return 1;
+            if (a.priority === "featured" && b.priority !== "featured") return -1;
+            if (b.priority === "featured" && a.priority !== "featured") return 1;
+            return b.viewerCount - a.viewerCount;
+          });
           await env.KV.put("live_streams", JSON.stringify(streams));
         }
       } catch {}
