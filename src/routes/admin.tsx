@@ -208,6 +208,13 @@ function AdminDashboard() {
     const stream = streams.find((s) => s.id === editingStreamId);
     if (!stream) return;
 
+    if (selectedEventId === "" && selectedDurationOption === "event_end") {
+      alert(
+        "Cannot set duration to 'Until Event Ends' when no event is selected. Please choose a different duration or select an event.",
+      );
+      return;
+    }
+
     await saveStreamOverride({
       data: {
         streamId: editingStreamId,
@@ -372,7 +379,9 @@ function AdminDashboard() {
                             <td className="px-5 py-4">
                               {isLinked ? (
                                 <span className="cursor-pointer text-sm font-medium text-green-400 hover:underline">
-                                  {override?.eventId}
+                                  {stream.matchedEvent?.eventName ??
+                                    override?.eventName ??
+                                    stream.matchedEvent?.eventId}
                                 </span>
                               ) : (
                                 <span className="text-sm text-copy-secondary/50">Unlinked</span>
@@ -456,7 +465,7 @@ function AdminDashboard() {
                           onChange={(e) => setSelectedPriority(e.target.value as StreamPriority)}
                           className="cursor-pointer rounded-lg border border-line bg-elevated px-3 py-2 text-sm text-copy-primary transition-colors outline-none focus:border-accent"
                         >
-                          <option value="">Select a priority...</option>
+                          <option value={editingStream.priority}>Select a priority...</option>
                           <option value="headline">Headline</option>
                           <option value="featured">Featured</option>
                           <option value="normal">Normal</option>
