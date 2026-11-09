@@ -2,7 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { getLiveStreams } from "#/server/streams";
 import { MOCK_HEADLINE_STREAM } from "#/mocks/data";
 
-export const Route = createFileRoute("/watch/")(  {
+export const Route = createFileRoute("/watch/")({
   beforeLoad: async () => {
     try {
       const streams = await getLiveStreams();

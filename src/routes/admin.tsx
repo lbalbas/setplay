@@ -21,14 +21,17 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getEvents } from "#/server/events";
 import type { MatchedStream, StreamPriority } from "#/server/matching";
 import type { CronLogEntry } from "#/server/cron";
+import { triggerStreamSync } from "#/server/cron";
 import getLogs from "#/server/logs";
 import { loginAdmin, logoutAdmin } from "#/server/auth";
 import { useQuery } from "@tanstack/react-query";
 import {
   getStreamOverrides,
   saveStreamOverride,
+  removeStreamOverride,
   type OverrideDurationOption,
 } from "#/server/overrides";
+import { formatDistanceToNow } from "date-fns";
 
 export const Route = createFileRoute("/admin")({
   loader: async ({ context }) => {
@@ -76,8 +79,8 @@ function AdminGate() {
       } else {
         setError(res.error || "Invalid administrator credentials");
       }
-    } catch (err: any) {
-      setError(err?.message || "Failed to authenticate");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to authenticate");
     } finally {
       setIsSubmitting(false);
     }
@@ -182,6 +185,8 @@ function AdminDashboard() {
   });
 
   const [editingStreamId, setEditingStreamId] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isMutatingOverride, setIsMutatingOverride] = useState(false);
 
   // Sidebar form state
   const [selectedEventId, setSelectedEventId] = useState("");
@@ -189,18 +194,71 @@ function AdminDashboard() {
   const [selectedDurationOption, setSelectedDurationOption] = useState<
     "event_end" | "stream_session" | "4h" | "12h" | "24h"
   >("event_end");
+
   // Derived stats
   const activeCount = streams.length;
   const linkedCount = streams.filter((s) => s.matchedEvent?.eventId != null).length;
   const headlineCount = streams.filter((s) => s.priority === "headline").length;
   const editingStream = streams.find((s) => s.id === editingStreamId) ?? null;
 
+  const latestLogTime = logs?.length
+    ? Math.max(...logs.map((l) => new Date(l.timestamp).getTime()))
+    : null;
+  const lastSyncText = latestLogTime
+    ? formatDistanceToNow(new Date(latestLogTime), { addSuffix: true })
+    : "Never";
+
+  const handleSyncStreams = async () => {
+    setIsSyncing(true);
+    try {
+      await triggerStreamSync();
+      await queryClient.invalidateQueries({ queryKey: ["live-streams"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-cron-logs"] });
+      await router.invalidate();
+    } catch (err: unknown) {
+      alert("Failed to sync streams: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   function handleEdit(stream: MatchedStream) {
     const override = overrides[stream.id];
     setEditingStreamId(stream.id);
-    setSelectedEventId(override?.eventId ?? stream.matchedEvent?.eventId ?? "");
+    const evId = override?.eventId ?? stream.matchedEvent?.eventId ?? "";
+    setSelectedEventId(evId);
     setSelectedPriority(override?.priority ?? stream.priority ?? "normal");
-    setSelectedDurationOption("4h");
+    setSelectedDurationOption(evId ? "event_end" : "4h");
+  }
+
+  const handleEventChange = (eventId: string) => {
+    setSelectedEventId(eventId);
+    if (!eventId && selectedDurationOption === "event_end") {
+      setSelectedDurationOption("4h");
+    }
+  };
+
+  async function handleRemoveOverride(streamId?: string) {
+    const targetId = streamId ?? editingStreamId;
+    if (!targetId) return;
+
+    setIsMutatingOverride(true);
+    try {
+      await removeStreamOverride({
+        data: { streamId: targetId },
+      });
+      await queryClient.invalidateQueries({ queryKey: ["live-streams"] });
+      await router.invalidate();
+      if (editingStreamId === targetId) {
+        setEditingStreamId(null);
+        setSelectedEventId("");
+        setSelectedPriority("normal");
+      }
+    } catch (err: unknown) {
+      alert("Failed to remove override: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsMutatingOverride(false);
+    }
   }
 
   async function handleApplyOverride() {
@@ -215,24 +273,30 @@ function AdminDashboard() {
       return;
     }
 
-    await saveStreamOverride({
-      data: {
-        streamId: editingStreamId,
-        streamName: stream.displayName,
-        durationOption: selectedDurationOption,
-        eventId: selectedEventId || null,
-        streamStartedAt: stream.startedAt,
-        priority: selectedPriority,
-      },
-    });
+    setIsMutatingOverride(true);
+    try {
+      await saveStreamOverride({
+        data: {
+          streamId: editingStreamId,
+          streamName: stream.displayName,
+          durationOption: selectedDurationOption,
+          eventId: selectedEventId || null,
+          streamStartedAt: stream.startedAt,
+          priority: selectedPriority,
+        },
+      });
 
-    await queryClient.invalidateQueries({ queryKey: ["live-streams"] });
+      await queryClient.invalidateQueries({ queryKey: ["live-streams"] });
+      await router.invalidate();
 
-    await router.invalidate();
-
-    setEditingStreamId(null);
-    setSelectedEventId("");
-    setSelectedPriority("normal");
+      setEditingStreamId(null);
+      setSelectedEventId("");
+      setSelectedPriority("normal");
+    } catch (err: unknown) {
+      alert("Failed to apply override: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsMutatingOverride(false);
+    }
   }
 
   return (
@@ -259,10 +323,15 @@ function AdminDashboard() {
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                className="flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-surface px-4 py-2 text-sm font-semibold text-copy-primary transition-colors hover:border-accent hover:bg-elevated"
+                onClick={handleSyncStreams}
+                disabled={isSyncing}
+                className="flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-surface px-4 py-2 text-sm font-semibold text-copy-primary transition-colors hover:border-accent hover:bg-elevated disabled:opacity-50"
               >
-                <RefreshCw aria-hidden="true" className="h-4 w-4" />
-                Sync Streams
+                <RefreshCw
+                  aria-hidden="true"
+                  className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`}
+                />
+                {isSyncing ? "Syncing..." : "Sync Streams"}
               </button>
               <button
                 type="button"
@@ -295,7 +364,7 @@ function AdminDashboard() {
             />
             <StatCard
               icon={<Clock aria-hidden="true" className="h-4 w-4 text-copy-secondary" />}
-              value="2m ago"
+              value={lastSyncText}
               label="Last Sync"
             />
           </div>
@@ -351,63 +420,93 @@ function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {streams.map((stream) => {
-                        const override = overrides[stream.id] || overrides[stream.streamName];
-
-                        const priority = stream.priority ?? override?.priority ?? "normal";
-
-                        const eventId = stream.matchedEvent?.eventId ?? override?.eventId;
-                        const isLinked = Boolean(eventId);
-                        return (
-                          <tr
-                            key={stream.id}
-                            className={`border-b border-line/50 transition-colors last:border-b-0 ${
-                              editingStreamId === stream.id
-                                ? "bg-elevated/60"
-                                : "hover:bg-elevated/30"
-                            }`}
+                      {streams.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={6}
+                            className="px-5 py-8 text-center text-xs text-copy-secondary"
                           >
-                            <td className="px-5 py-4">
-                              <div className="font-semibold text-copy-primary">
-                                {stream.displayName}
-                              </div>
-                              <div className="text-xs text-copy-secondary">{stream.gameName}</div>
-                            </td>
-                            <td className="px-5 py-4 font-bold text-copy-primary">
-                              {formatViewers(stream.viewerCount)}
-                            </td>
-                            <td className="px-5 py-4">
-                              {isLinked ? (
-                                <span className="cursor-pointer text-sm font-medium text-green-400 hover:underline">
-                                  {stream.matchedEvent?.eventName ??
-                                    override?.eventName ??
-                                    stream.matchedEvent?.eventId}
+                            No active live streams currently cached. Click "Sync Streams" to ingest
+                            from Twitch & start.gg.
+                          </td>
+                        </tr>
+                      ) : (
+                        streams.map((stream) => {
+                          const override = overrides[stream.id] || overrides[stream.streamName];
+                          const priority = stream.priority ?? override?.priority ?? "normal";
+                          const eventId = stream.matchedEvent?.eventId ?? override?.eventId;
+                          const isLinked = Boolean(eventId);
+                          const hasActiveOverride = Boolean(overrides[stream.id]);
+
+                          return (
+                            <tr
+                              key={stream.id}
+                              className={`border-b border-line/50 transition-colors last:border-b-0 ${
+                                editingStreamId === stream.id
+                                  ? "bg-elevated/60"
+                                  : "hover:bg-elevated/30"
+                              }`}
+                            >
+                              <td className="px-5 py-4">
+                                <div className="flex items-center gap-2 font-semibold text-copy-primary">
+                                  <span>{stream.displayName}</span>
+                                  {hasActiveOverride && (
+                                    <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold text-accent uppercase">
+                                      Override
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-copy-secondary">{stream.gameName}</div>
+                              </td>
+                              <td className="px-5 py-4 font-bold text-copy-primary">
+                                {formatViewers(stream.viewerCount)}
+                              </td>
+                              <td className="px-5 py-4">
+                                {isLinked ? (
+                                  <span className="cursor-pointer text-sm font-medium text-green-400 hover:underline">
+                                    {stream.matchedEvent?.eventName ??
+                                      override?.eventName ??
+                                      stream.matchedEvent?.eventId}
+                                  </span>
+                                ) : (
+                                  <span className="text-sm text-copy-secondary/50">Unlinked</span>
+                                )}
+                              </td>
+                              <td className="px-5 py-4">
+                                <PriorityBadge priority={priority} />
+                              </td>
+                              <td className="px-5 py-4">
+                                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-red-400">
+                                  <span className="h-2 w-2 animate-pulse rounded-full bg-red-400" />
+                                  LIVE
                                 </span>
-                              ) : (
-                                <span className="text-sm text-copy-secondary/50">Unlinked</span>
-                              )}
-                            </td>
-                            <td className="px-5 py-4">
-                              <PriorityBadge priority={priority} />
-                            </td>
-                            <td className="px-5 py-4">
-                              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-red-400">
-                                <span className="h-2 w-2 animate-pulse rounded-full bg-red-400" />
-                                LIVE
-                              </span>
-                            </td>
-                            <td className="px-5 py-4">
-                              <button
-                                type="button"
-                                onClick={() => handleEdit(stream)}
-                                className="cursor-pointer rounded border border-line bg-surface px-3 py-1 text-xs font-semibold tracking-wide text-copy-secondary uppercase transition-colors hover:border-accent hover:text-accent"
-                              >
-                                Edit
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
+                              </td>
+                              <td className="px-5 py-4">
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleEdit(stream)}
+                                    className="cursor-pointer rounded border border-line bg-surface px-3 py-1 text-xs font-semibold tracking-wide text-copy-secondary uppercase transition-colors hover:border-accent hover:text-accent"
+                                  >
+                                    Edit
+                                  </button>
+                                  {hasActiveOverride && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveOverride(stream.id)}
+                                      disabled={isMutatingOverride}
+                                      className="cursor-pointer rounded border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-xs font-semibold tracking-wide text-red-400 uppercase transition-colors hover:bg-red-500/20 disabled:opacity-50"
+                                      title="Reset stream override to automatic matching"
+                                    >
+                                      Reset
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -441,7 +540,7 @@ function AdminDashboard() {
                         <select
                           id="event-select"
                           value={selectedEventId}
-                          onChange={(e) => setSelectedEventId(e.target.value)}
+                          onChange={(e) => handleEventChange(e.target.value)}
                           className="cursor-pointer rounded-lg border border-line bg-elevated px-3 py-2 text-sm text-copy-primary transition-colors outline-none focus:border-accent"
                         >
                           <option value="">No Event (Casual / Unlinked)</option>
@@ -465,10 +564,9 @@ function AdminDashboard() {
                           onChange={(e) => setSelectedPriority(e.target.value as StreamPriority)}
                           className="cursor-pointer rounded-lg border border-line bg-elevated px-3 py-2 text-sm text-copy-primary transition-colors outline-none focus:border-accent"
                         >
-                          <option value={editingStream.priority}>Select a priority...</option>
-                          <option value="headline">Headline</option>
-                          <option value="featured">Featured</option>
                           <option value="normal">Normal</option>
+                          <option value="featured">Featured</option>
+                          <option value="headline">Headline</option>
                         </select>
                       </div>
 
@@ -492,14 +590,36 @@ function AdminDashboard() {
                         </select>
                       </div>
 
-                      {/* Apply */}
-                      <button
-                        type="button"
-                        onClick={handleApplyOverride}
-                        className="mt-1 cursor-pointer rounded-lg bg-elevated px-4 py-2.5 text-sm font-bold tracking-wide text-copy-primary uppercase transition-colors hover:bg-accent hover:text-base"
-                      >
-                        Apply Override
-                      </button>
+                      {/* Action Buttons */}
+                      <div className="mt-2 flex flex-col gap-2">
+                        <button
+                          type="button"
+                          onClick={handleApplyOverride}
+                          disabled={isMutatingOverride}
+                          className="flex cursor-pointer items-center justify-center rounded-lg bg-accent px-4 py-2.5 text-xs font-bold tracking-wide text-black uppercase transition-colors hover:bg-accent/90 disabled:opacity-50"
+                        >
+                          {isMutatingOverride ? "Saving..." : "Apply Override"}
+                        </button>
+
+                        {overrides[editingStream.id] && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveOverride(editingStream.id)}
+                            disabled={isMutatingOverride}
+                            className="cursor-pointer rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-2 text-xs font-semibold text-red-400 uppercase transition-colors hover:bg-red-500/20 disabled:opacity-50"
+                          >
+                            Remove Override
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => setEditingStreamId(null)}
+                          className="cursor-pointer rounded-lg border border-line bg-elevated/40 px-4 py-1.5 text-xs font-semibold text-copy-secondary transition-colors hover:text-copy-primary"
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <p className="mt-4 text-sm leading-relaxed text-copy-secondary">

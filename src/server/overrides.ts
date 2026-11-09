@@ -6,6 +6,9 @@ import { createDb, events } from "./db";
 import { eq } from "drizzle-orm";
 import { PRIORITY_WEIGHT, StreamPrioritySchema } from "./matching";
 import type { MatchedStream } from "./matching";
+export { PRIORITY_WEIGHT };
+export type { StreamPriority } from "./matching";
+export { StreamPrioritySchema } from "./matching";
 export type OverrideDurationOption = "event_end" | "stream_session" | "4h" | "12h" | "24h";
 
 export const OverrideDurationOptionSchema = z.enum([
