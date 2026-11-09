@@ -19,17 +19,17 @@ vi.mock("web-push-neo", () => {
 });
 
 describe("Push Notification Utilities & Schemas", () => {
-  it("computes deterministic SHA-256 subscription IDs from endpoint URLs", () => {
+  it("computes deterministic SHA-256 subscription IDs from endpoint URLs", async () => {
     const endpoint = "https://fcm.googleapis.com/fcm/send/sample-token-12345";
-    const id1 = getSubscriptionId(endpoint);
-    const id2 = getSubscriptionId(endpoint);
+    const id1 = await getSubscriptionId(endpoint);
+    const id2 = await getSubscriptionId(endpoint);
 
     expect(id1).toBe(id2);
     expect(id1).toHaveLength(64); // SHA-256 hex string is 64 characters
     expect(typeof id1).toBe("string");
 
     const differentEndpoint = "https://fcm.googleapis.com/fcm/send/different-token";
-    expect(getSubscriptionId(differentEndpoint)).not.toBe(id1);
+    expect(await getSubscriptionId(differentEndpoint)).not.toBe(id1);
   });
 
   it("validates PushSubscriptionPayloadSchema", () => {

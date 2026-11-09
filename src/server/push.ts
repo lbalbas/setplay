@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { sendNotification as webpushSendNotification } from "web-push-neo";
 import { z } from "zod";
 import { eq, and } from "drizzle-orm";
@@ -43,11 +42,14 @@ export type EventNotificationPayload = z.infer<typeof EventNotificationPayloadSc
 // ---------------------------------------------------------------------------
 
 /**
- * Computes a deterministic SHA-256 hash for a push subscription endpoint URL.
+ * Computes a deterministic SHA-256 hash for a push subscription endpoint URL using Web Crypto.
  * Used as the primary key in `push_subscriptions`.
  */
-export function getSubscriptionId(endpoint: string): string {
-  return createHash("sha256").update(endpoint).digest("hex");
+export async function getSubscriptionId(endpoint: string): Promise<string> {
+  const data = new TextEncoder().encode(endpoint);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 /**

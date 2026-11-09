@@ -67,7 +67,7 @@ export const toggleEventSubscription = createServerFn({ method: "POST" })
         throw new Error("Invalid Push Subscription payload structure");
       }
 
-      const subscriptionId = getSubscriptionId(data.subscription.endpoint);
+      const subscriptionId = await getSubscriptionId(data.subscription.endpoint);
       console.log(`[toggleEventSubscription] Computed subscriptionId: ${subscriptionId}`);
 
       // 1. Ensure push subscription record is registered/updated
@@ -165,7 +165,7 @@ export const getEventSubscriptionsForEndpoint = createServerFn({ method: "POST" 
     }
 
     const db = createDb(env.DB);
-    const subscriptionId = getSubscriptionId(data.endpoint);
+    const subscriptionId = await getSubscriptionId(data.endpoint);
 
     const interests = await db
       .select({
