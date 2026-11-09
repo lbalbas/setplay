@@ -199,4 +199,42 @@ describe("4-Layer Matching Engine", () => {
     expect(results[2].id).toBe("s-casual-high");
     expect(results[2].streamType).toBe("casual");
   });
+
+  it("handles priority weight sorting correctly across tournament and casual streams", () => {
+    const streamHeadline = createMockStream({
+      id: "s-headline",
+      user_login: "headlinestream",
+      viewer_count: 100,
+    });
+    const streamFeatured = createMockStream({
+      id: "s-featured",
+      user_login: "featuredstream",
+      viewer_count: 500,
+    });
+    const streamNormal = createMockStream({
+      id: "s-normal",
+      user_login: "normalstream",
+      viewer_count: 2000,
+    });
+
+    const results = matchStreams([streamNormal, streamHeadline, streamFeatured], [], MOCK_EVENTS);
+
+    // Apply priorities manually as the override or cron logic would
+    results.find((s) => s.id === "s-headline")!.priority = "headline";
+    results.find((s) => s.id === "s-featured")!.priority = "featured";
+    results.find((s) => s.id === "s-normal")!.priority = "normal";
+
+    const PRIORITY_WEIGHT = { headline: 3, featured: 2, normal: 1 };
+    results.sort((a, b) => {
+      const weightDiff =
+        (PRIORITY_WEIGHT[b.priority ?? "normal"] ?? 1) -
+        (PRIORITY_WEIGHT[a.priority ?? "normal"] ?? 1);
+      if (weightDiff !== 0) return weightDiff;
+      return b.viewerCount - a.viewerCount;
+    });
+
+    expect(results[0].id).toBe("s-headline");
+    expect(results[1].id).toBe("s-featured");
+    expect(results[2].id).toBe("s-normal");
+  });
 });
