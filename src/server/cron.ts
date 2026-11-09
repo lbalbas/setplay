@@ -1,3 +1,6 @@
+import { createServerFn } from "@tanstack/react-start";
+import { checkAdminAuth } from "./auth";
+import { getWorkerEnv } from "./env";
 import { createDb } from "./db";
 import { games, events, eventGames, pushSubscriptions, subscriptionInterests } from "./db/schema";
 import { lt, lte, gte, gt, eq, and, sql, inArray } from "drizzle-orm";
@@ -134,7 +137,9 @@ export async function run60sStreamMatching(env: Env): Promise<void> {
     if (overridesModified) {
       await env.KV.put("stream_overrides", JSON.stringify(overrides));
     }
-    await env.KV.put("live_streams", JSON.stringify(matchedStreams));
+    await env.KV.put("live_streams", JSON.stringify(matchedStreams), {
+      expirationTtl: 300,
+    });
 
     recordLog(
       logs,
@@ -153,24 +158,34 @@ export async function run60sStreamMatching(env: Env): Promise<void> {
       const eventId = stream.matchedEvent.eventId;
       const alertKey = `event_alert_sent:${eventId}`;
 
-      const alreadyAlerted = await env.KV.get(alertKey);
-      if (!alreadyAlerted) {
-        await dispatchPushToEventSubscribers(db, env, eventId, {
-          eventId,
-          title: `🏆 ${stream.matchedEvent.eventName} is Live!`,
-          body: `${stream.displayName} is broadcasting "${stream.title}"`,
-          url: `/events`,
-        });
+      try {
+        const alreadyAlerted = await env.KV.get(alertKey);
+        if (!alreadyAlerted) {
+          await dispatchPushToEventSubscribers(db, env, eventId, {
+            eventId,
+            title: `🏆 ${stream.matchedEvent.eventName} is Live!`,
+            body: `${stream.displayName} is broadcasting "${stream.title}"`,
+            url: `/events`,
+          });
 
+          recordLog(
+            logs,
+            "push-notify",
+            "info",
+            `Dispatched push alerts for live event: ${stream.matchedEvent.eventName}`,
+          );
+
+          // Set 24-hour cooldown flag in KV to prevent duplicate notifications during the event
+          await env.KV.put(alertKey, "1", { expirationTtl: 86400 });
+        }
+      } catch (pushError) {
         recordLog(
           logs,
           "push-notify",
-          "info",
-          `Dispatched push alerts for live event: ${stream.matchedEvent.eventName}`,
+          "warning",
+          `Failed to dispatch push notification for event ${eventId}`,
+          pushError,
         );
-
-        // Set 24-hour cooldown flag in KV to prevent duplicate notifications during the event
-        await env.KV.put(alertKey, "1", { expirationTtl: 86400 });
       }
     }
   } catch (error) {
@@ -243,20 +258,24 @@ export async function run6HourCalendarSync(env: Env): Promise<void> {
       }
     }
 
+    const eventGameRows: { eventId: string; gameId: string }[] = [];
     for (const tournament of upcomingTournaments) {
       const eventId = String(tournament.id);
       for (const startggGameId of tournament.gameIds) {
         const twitchGameId = startggToTwitchMap.get(startggGameId);
         if (twitchGameId) {
-          await db
-            .insert(eventGames)
-            .values({
-              eventId,
-              gameId: twitchGameId,
-            })
-            .onConflictDoNothing(); // Ignore if (eventId, gameId) pair already exists
+          eventGameRows.push({
+            eventId,
+            gameId: twitchGameId,
+          });
         }
       }
+    }
+
+    const EVENT_GAMES_BATCH_SIZE = 50;
+    for (let i = 0; i < eventGameRows.length; i += EVENT_GAMES_BATCH_SIZE) {
+      const batch = eventGameRows.slice(i, i + EVENT_GAMES_BATCH_SIZE);
+      await db.insert(eventGames).values(batch).onConflictDoNothing();
     }
 
     recordLog(
@@ -351,27 +370,37 @@ async function pruneOldEvents(db: ReturnType<typeof createDb>): Promise<void> {
 
   const toDelete = [...oldEvents, ...farFutureEvents];
   if (toDelete.length > 0) {
-    for (const item of toDelete) {
-      await db.delete(eventGames).where(eq(eventGames.eventId, item.id));
-      await db.delete(events).where(eq(events.id, item.id));
-    }
+    const toDeleteIds = toDelete.map((e) => e.id);
+
+    // 1. Prune polymorphic subscription interests for deleted events
+    await db
+      .delete(subscriptionInterests)
+      .where(
+        and(
+          eq(subscriptionInterests.interestType, "event"),
+          inArray(subscriptionInterests.targetId, toDeleteIds),
+        ),
+      );
+
+    // 2. Prune event_games and events
+    await db.delete(eventGames).where(inArray(eventGames.eventId, toDeleteIds));
+    await db.delete(events).where(inArray(events.id, toDeleteIds));
+
     console.log(
       `[Cron Worker] Maintenance: Pruned ${toDelete.length} outdated or far-future events.`,
     );
   }
-
-  const toDeleteIds = toDelete.map((e) => e.id);
-  await db
-    .delete(subscriptionInterests)
-    .where(
-      and(
-        eq(subscriptionInterests.interestType, "event"),
-        inArray(subscriptionInterests.targetId, toDeleteIds),
-      ),
-    );
-  // 2. Delete events (eventGames will automatically cascade)
-  await db.delete(events).where(inArray(events.id, toDeleteIds));
 }
+
+export const triggerStreamSync = createServerFn({ method: "POST" }).handler(async ({ context }) => {
+  const env = await getWorkerEnv(context);
+  const { authenticated } = await checkAdminAuth(context);
+  if (!authenticated) throw new Error("Unauthorized");
+  if (!env) throw new Error("Worker env not available");
+
+  await run60sStreamMatching(env);
+  return { success: true };
+});
 
 function getBracketUrlFromTournament(tournament: StartGGTournament): string | null {
   const slug = tournament.slug;
