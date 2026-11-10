@@ -48,14 +48,15 @@
 - **Admin Dashboard Integration & Controls (`admin.tsx`)**: Wired working "Sync Streams" trigger via server function, added inline "Reset" / "Remove Override" actions in table and sidebar, dynamically computed "Last Sync" relative timestamp from KV logs, handled empty stream cache states, and eliminated `any` types.
 - **Cron Job Optimization & Maintenance Resilience (`cron.ts`)**: Batched `eventGames` D1 inserts in chunks of 50 to eliminate N+1 round trips, wrapped individual Web Push dispatches in isolated try/catch blocks to protect stream cache updates, added 300s expiration TTL to live streams KV cache, and cleaned up orphaned polymorphic `subscriptionInterests` rows on event pruning.
 - **Unit Test Suite Expansion**: Expanded unit test coverage from 21 to 44 tests across 8 test suites, adding new suites for `overrides.test.ts` (Zod schemas, KV parsing fallback, priority weighting), `auth.test.ts` (token schemas, Bearer/cookie extraction), and `watchResolve.test.ts` (live stream resolving, case-insensitivity, mock fallback), plus priority sorting tests in `matching.test.ts`.
-- Implement Theather view for live streams.
+- **Theater Mode View**: Implemented responsive theater mode for stream watch experience with full viewport height layout, top bar toggle, and 't' key shortcut.
+- **Playwright E2E Test Suite**: Implemented comprehensive end-to-end verification suite comprising 33 tests across 7 specification files (`01-navigation-shell.spec.ts`, `02-dashboard-streams.spec.ts`, `03-calendar-sidebar.spec.ts`, `04-events-directory.spec.ts`, `05-watch-experience.spec.ts`, `06-admin-portal.spec.ts`, `07-api-integration.spec.ts`), with shared fixtures in `tests/e2e/fixtures.ts`. Configured `playwright.config.ts` and `vitest.config.ts` for clean test isolation and controlled concurrency. All 33 E2E tests and 44 unit tests pass 100%.
 
 ## In Progress
 
 
 ## Next Up
 
-- Add Playwright E2E verification test suite.
+- MVP Polish & Production Deployment Preparation.
 
 ## Open Questions
 
