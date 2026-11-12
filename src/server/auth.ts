@@ -27,13 +27,22 @@ export const checkAdminAuth = createServerFn({ method: "GET" }).handler(async ({
   const cookies = Object.fromEntries(
     cookieHeader.split("; ").map((c) => {
       const [key, ...v] = c.split("=");
-      return [key.trim(), v.join("=")];
+      const val = v.join("=");
+      let decodedVal = val;
+      try {
+        decodedVal = decodeURIComponent(val);
+      } catch {
+        console.warn(
+          `[checkAdminAuth] Failed to decode cookie value for key: ${key}, try updating your browser or clearing cookies.`,
+        );
+        return [key.trim(), val];
+      }
+      return [key.trim(), decodedVal];
     }),
   );
   const tokenFromCookie = cookies["admin_token"];
 
   const clientToken = tokenFromHeader || tokenFromCookie;
-
   // 4. Compare tokens
   return {
     authenticated: Boolean(clientToken && clientToken === expectedSecret),
