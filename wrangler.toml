@@ -32,5 +32,10 @@ binding = "ASSETS"
 #   VAPID_SUBJECT         (e.g. "mailto:your@email.com")
 #   ADMIN_TOKEN           (a random secret for /admin/* access)
 
+[observability.logs]
+enabled = true
+invocation_logs = true
+persist = true
+
 [dev]
 port = 8787
