@@ -438,11 +438,15 @@ function recordLog(
 async function flushCronLogs(env: Env, newLogs: CronLogEntry[]): Promise<void> {
   if (newLogs.length === 0) return;
   try {
+    return;
+    /*
+    Disable log caching for now to avoid KV storage costs. Logs can be retrieved from console output instead.
     const existingLogs = (await env.KV.get(CRON_LOGS_KEY, "json")) as CronLogEntry[] | null;
     const combined = [...newLogs, ...(existingLogs || [])].slice(0, MAX_CRON_LOGS);
     await env.KV.put(CRON_LOGS_KEY, JSON.stringify(combined), {
       expirationTtl: 86400 * 7,
     });
+    */
   } catch (err) {
     console.error("[Cron Worker] Failed to flush logs to KV:", err);
   }
