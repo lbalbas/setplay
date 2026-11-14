@@ -50,6 +50,7 @@
 - **Unit Test Suite Expansion**: Expanded unit test coverage from 21 to 44 tests across 8 test suites, adding new suites for `overrides.test.ts` (Zod schemas, KV parsing fallback, priority weighting), `auth.test.ts` (token schemas, Bearer/cookie extraction), and `watchResolve.test.ts` (live stream resolving, case-insensitivity, mock fallback), plus priority sorting tests in `matching.test.ts`.
 - **Theater Mode View**: Implemented responsive theater mode for stream watch experience with full viewport height layout, top bar toggle, and 't' key shortcut.
 - **Playwright E2E Test Suite**: Implemented comprehensive end-to-end verification suite comprising 33 tests across 7 specification files (`01-navigation-shell.spec.ts`, `02-dashboard-streams.spec.ts`, `03-calendar-sidebar.spec.ts`, `04-events-directory.spec.ts`, `05-watch-experience.spec.ts`, `06-admin-portal.spec.ts`, `07-api-integration.spec.ts`), with shared fixtures in `tests/e2e/fixtures.ts`. Configured `playwright.config.ts` and `vitest.config.ts` for clean test isolation and controlled concurrency. All 33 E2E tests and 44 unit tests pass 100%.
+- **Project Documentation & README Overhaul**: Replaced the default boilerplate README with a production-grade documentation guide detailing the FGC problem space, 4-layer matching engine, edge-first architecture (Cloudflare Workers, D1, KV), system invariants, Mermaid system architecture diagram, tech stack breakdown, project tree, local development setup, testing suites (unit & E2E), and design system tokens.
 
 ## In Progress
 
