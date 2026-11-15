@@ -38,19 +38,14 @@ export async function handleCronTrigger(event: ScheduledEvent, env: Env): Promis
   if (cronPattern === "0 */6 * * *") {
     await run6HourCalendarSync(env);
   } else {
-    // Default or "* * * * *" runs the 60s stream matching job
-    await run60sStreamMatching(env);
+    // Default or recurring cron ("*/3 * * * *") runs the stream matching job
+    await runStreamMatching(env);
   }
 }
 
-export async function run60sStreamMatching(env: Env): Promise<void> {
+export async function runStreamMatching(env: Env): Promise<void> {
   const logs: CronLogEntry[] = [];
-  recordLog(
-    logs,
-    "stream-sync",
-    "info",
-    `60s Stream Sync triggered at ${new Date().toISOString()}`,
-  );
+  recordLog(logs, "stream-sync", "info", `Stream Sync triggered at ${new Date().toISOString()}`);
 
   try {
     const db = createDb(env.DB);
@@ -138,7 +133,7 @@ export async function run60sStreamMatching(env: Env): Promise<void> {
       await env.KV.put("stream_overrides", JSON.stringify(overrides));
     }
     await env.KV.put("live_streams", JSON.stringify(matchedStreams), {
-      expirationTtl: 300,
+      expirationTtl: 600,
     });
 
     recordLog(
@@ -189,11 +184,14 @@ export async function run60sStreamMatching(env: Env): Promise<void> {
       }
     }
   } catch (error) {
-    recordLog(logs, "stream-sync", "error", "60s stream matching failed", error);
+    recordLog(logs, "stream-sync", "error", "Stream matching failed", error);
   } finally {
     await flushCronLogs(env, logs);
   }
 }
+
+// Backward compatibility alias
+export const run60sStreamMatching = runStreamMatching;
 
 export async function run6HourCalendarSync(env: Env): Promise<void> {
   const logs: CronLogEntry[] = [];
@@ -398,7 +396,7 @@ export const triggerStreamSync = createServerFn({ method: "POST" }).handler(asyn
   if (!authenticated) throw new Error("Unauthorized");
   if (!env) throw new Error("Worker env not available");
 
-  await run60sStreamMatching(env);
+  await runStreamMatching(env);
   return { success: true };
 });
 

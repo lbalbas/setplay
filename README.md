@@ -114,7 +114,7 @@ flowchart TD
     ServerFns -->|"Override updates"| KV
 
     %% Background Cron flows
-    Cron -->|"Every 60s"| Matching
+    Cron -->|"Every 3m"| Matching
     Matching -->|"Poll live streams"| Twitch
     Matching -->|"Poll stream queues"| StartGG
     Matching -->|"Write live feed"| KV
@@ -131,7 +131,7 @@ flowchart TD
 ### Key Engineering Invariants
 
 1. **Hot-Path Isolation**: The public client stream feed polls `/api/live-streams`, which serves directly from **Cloudflare KV**. Visitors never touch Cloudflare D1 for live stream feeds, completely protecting the database from high-concurrency read spikes.
-2. **Zero Database Writes in Hot Loops**: The 60-second matching cron job only writes to Cloudflare KV. D1 writes are strictly reserved for the 6-hour tournament sync or direct user mutations (push subscriptions, manual overrides).
+2. **Zero Database Writes in Hot Loops**: The 3-minute matching cron job only writes to Cloudflare KV. D1 writes are strictly reserved for the 6-hour tournament sync or direct user mutations (push subscriptions, manual overrides).
 3. **Subscription Hygiene**: The push notification engine proactively purges expired or invalidated subscription endpoints upon receiving `410 Gone` responses from browser push services, preventing queue degradation.
 4. **Hybrid Communication Model**:
    - **Server Functions (`createServerFn`)**: Used for type-safe, RPC-style client-server operations (push subscriptions, admin actions, game lookups) with Zod boundary validation.
@@ -147,7 +147,7 @@ flowchart TD
 | **Edge Runtime**                | [Cloudflare Workers](https://workers.cloudflare.com/)                                             | Serverless edge execution with zero cold starts                                          |
 | **Database**                    | [Cloudflare D1](https://developers.cloudflare.com/d1/) + [Drizzle ORM](https://orm.drizzle.team/) | Serverless SQLite relational database with type-safe schema migrations                   |
 | **Hot Cache & Ephemeral State** | [Cloudflare KV](https://developers.cloudflare.com/kv/)                                            | Low-latency edge key-value store for live stream caches, OAuth tokens, and cron logs     |
-| **Background Scheduling**       | Cloudflare Worker Crons                                                                           | Dual cron triggers: 60s stream matching & 6-hour tournament calendar sync                |
+| **Background Scheduling**       | Cloudflare Worker Crons                                                                           | Dual cron triggers: 3-minute stream matching & 6-hour tournament calendar sync           |
 | **Styling & UI**                | [Tailwind CSS v4](https://tailwindcss.com/) + [Lucide React](https://lucide.dev/)                 | Dark-mode only Obsidian & Neon Yellow technical design system                            |
 | **Data Validation**             | [Zod](https://zod.dev/)                                                                           | Runtime boundary validation for all external APIs, environment configs, and RPC payloads |
 | **Push Notifications**          | Web Push API + `web-push-neo`                                                                     | Zero-login VAPID-authenticated browser push notifications                                |
@@ -188,7 +188,7 @@ setplay/
 │   │   │   ├── schema.ts      # Relational D1 schema & TypeScript models
 │   │   │   └── seed.sql       # Curated FGC game IDs (Twitch + start.gg)
 │   │   ├── auth.ts            # Admin session & token validation routines
-│   │   ├── cron.ts            # 60s matching & 6h calendar sync routines
+│   │   ├── cron.ts            # Stream matching (3m) & calendar sync (6h) routines
 │   │   ├── matching.ts        # 4-layer stream-to-bracket matching engine
 │   │   ├── overrides.ts       # Manual admin stream mapping & priority weights
 │   │   ├── push.ts            # VAPID notification dispatch & 410 dead-sub pruning

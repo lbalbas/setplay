@@ -35,11 +35,12 @@
 
 ## Polling & Cron Architecture
 
-- **Job 1 (Every 60s)**:
+- **Job 1 (Every 3 minutes / `*/3 * * * *`)**:
   - Query Twitch Helix API for live streams in registered game categories.
   - Query start.gg alpha GraphQL API for current stream queues in ongoing tournaments.
   - Run the 4-layer matching algorithm (`matching.ts`) to pair active broadcasts with active events. Streams that do not match are categorized as general/casual streams.
-  - Write the final prioritized list of matched and casual streams to Cloudflare KV (`live_streams`).
+  - Write the final prioritized list of matched and casual streams to Cloudflare KV (`live_streams`) with a 10-minute expiration TTL.
+  - Running every 3 minutes restricts daily KV write operations to ~480 writes/day, keeping usage comfortably below the Cloudflare KV free-tier limit of 1,000 writes/day.
 - **Job 2 (Every 6 hours)**:
   - Query start.gg for new/upcoming tournaments featuring the registered fighting games.
   - Upsert upcoming tournament metadata to D1 (`events`, `event_games`).
@@ -56,5 +57,5 @@
 
 1. **Hot-Path Isolation**: Page visitors never query D1 for the active stream list. The client polls `/api/live-streams` which retrieves the JSON directly from Cloudflare KV, protecting D1 from high-frequency read traffic.
 2. **Monolith Execution**: The application compiles into a single Cloudflare Worker. The cron worker and request router share the same bundle and database references.
-3. **No Database Writes in Cron hot-loops**: The 60-second cron job does not write stream history to D1; it only updates the static KV key.
+3. **No Database Writes in Cron hot-loops**: The 3-minute cron job does not write stream history to D1; it only updates the static KV key.
 4. **Subscription Integrity**: Expired or failed push endpoints (returned as 410 Gone from push services) must be immediately deleted from D1 to prevent queue bloat.

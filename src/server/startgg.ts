@@ -177,7 +177,7 @@ export async function queryStartGG<T>(
   return parsed;
 }
 // ---------------------------------------------------------------------------
-// 3. Active Stream Queue Fetcher (For 60s Stream Matching Engine)
+// 3. Active Stream Queue Fetcher (For Stream Matching Engine)
 // ---------------------------------------------------------------------------
 
 const ACTIVE_STREAMS_QUERY = `
