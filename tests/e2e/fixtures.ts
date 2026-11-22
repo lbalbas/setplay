@@ -1,5 +1,24 @@
+import fs from "node:fs";
+import path from "node:path";
 import type { Page } from "@playwright/test";
 import type { MatchedStream } from "#/server/matching";
+
+export function getValidAdminToken(): string {
+  if (process.env.ADMIN_TOKEN) {
+    return process.env.ADMIN_TOKEN;
+  }
+  try {
+    const devVarsPath = path.resolve(process.cwd(), ".dev.vars");
+    if (fs.existsSync(devVarsPath)) {
+      const content = fs.readFileSync(devVarsPath, "utf-8");
+      const match = content.match(/^ADMIN_TOKEN=(?:"([^"]+)"|'([^']+)'|([^\r\n]+))/m);
+      if (match) {
+        return (match[1] || match[2] || match[3] || "").trim();
+      }
+    }
+  } catch {}
+  return "my_super_secret_local_token_123";
+}
 
 export const FIXTURE_STREAMS: MatchedStream[] = [
   {

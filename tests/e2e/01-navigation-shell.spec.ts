@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { getValidAdminToken } from "./fixtures";
 
 test.describe("Global Navigation Shell & Layout", () => {
   test("loads the root page with correct title, dark mode, and header", async ({ page }) => {
@@ -16,9 +17,9 @@ test.describe("Global Navigation Shell & Layout", () => {
     await expect(logo).toBeVisible();
     await expect(logo).toHaveAttribute("href", "/");
 
-    // Verify search input
+    // Search input is temporarily disabled/commented out until global search is implemented
     const searchInput = page.getByPlaceholder("Search streams, events, players...");
-    await expect(searchInput).toBeVisible();
+    await expect(searchInput).not.toBeVisible();
 
     // Verify public nav links
     const streamsLink = page.locator("header nav").getByRole("link", { name: "Streams" });
@@ -36,7 +37,7 @@ test.describe("Global Navigation Shell & Layout", () => {
     await context.addCookies([
       {
         name: "admin_token",
-        value: "my_super_secret_local_token_123",
+        value: encodeURIComponent(getValidAdminToken()),
         url: "http://localhost:3000",
       },
     ]);

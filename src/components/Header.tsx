@@ -1,5 +1,5 @@
 import { getRouteApi, Link, useLocation } from "@tanstack/react-router";
-import { Search } from "lucide-react";
+// import { Search } from "lucide-react";
 import GameFilterBar from "./GameFilterBar";
 
 const rootRoute = getRouteApi("__root__");
@@ -29,7 +29,8 @@ export default function Header() {
           </Link>
         </div>
 
-        {/* Search Bar */}
+        {/* Search Bar - commented out until global stream/event search is implemented */}
+        {/*
         <div className="relative mx-6 max-w-md flex-1">
           <Search
             aria-hidden="true"
@@ -43,6 +44,7 @@ export default function Header() {
             className="w-full rounded-full border bg-surface py-2 pr-4 pl-10 text-xs text-copy-primary/80 placeholder-copy-primary/50 transition-colors focus:border-accent focus:outline-none"
           />
         </div>
+        */}
 
         {/* User Actions */}
         <nav className="flex shrink-0 items-center gap-5 text-xs font-semibold">

@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
-import { mockLiveStreams } from "./fixtures";
+import { mockLiveStreams, getValidAdminToken } from "./fixtures";
 
-const VALID_ADMIN_TOKEN = "my_super_secret_local_token_123";
+const VALID_ADMIN_TOKEN = getValidAdminToken();
 
 test.describe("Admin Portal & Session Management", () => {
   test.beforeEach(async ({ page, context }) => {
@@ -63,7 +63,7 @@ test.describe("Admin Portal & Session Management", () => {
     await context.addCookies([
       {
         name: "admin_token",
-        value: VALID_ADMIN_TOKEN,
+        value: encodeURIComponent(VALID_ADMIN_TOKEN),
         url: "http://localhost:3000",
       },
     ]);
@@ -91,7 +91,7 @@ test.describe("Admin Portal & Session Management", () => {
     await context.addCookies([
       {
         name: "admin_token",
-        value: VALID_ADMIN_TOKEN,
+        value: encodeURIComponent(VALID_ADMIN_TOKEN),
         url: "http://localhost:3000",
       },
     ]);
@@ -131,7 +131,7 @@ test.describe("Admin Portal & Session Management", () => {
     await context.addCookies([
       {
         name: "admin_token",
-        value: VALID_ADMIN_TOKEN,
+        value: encodeURIComponent(VALID_ADMIN_TOKEN),
         url: "http://localhost:3000",
       },
     ]);
