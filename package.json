@@ -20,6 +20,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:migrate:local": "wrangler d1 migrations apply setplay-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply setplay-db --remote",
     "db:seed:local": "wrangler d1 execute setplay-db --local --file=./src/server/db/seed.sql",
     "cf:dev": "wrangler dev",
     "cf:deploy": "wrangler deploy",

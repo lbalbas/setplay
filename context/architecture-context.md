@@ -59,3 +59,10 @@
 2. **Monolith Execution**: The application compiles into a single Cloudflare Worker. The cron worker and request router share the same bundle and database references.
 3. **No Database Writes in Cron hot-loops**: The 3-minute cron job does not write stream history to D1; it only updates the static KV key.
 4. **Subscription Integrity**: Expired or failed push endpoints (returned as 410 Gone from push services) must be immediately deleted from D1 to prevent queue bloat.
+
+## CI/CD Pipeline
+
+- **Platform**: GitHub Actions (`.github/workflows/ci-cd.yml`).
+- **Trigger**: Pull requests and pushes targeting `main` or `master`.
+- **Validation Job**: Executes `oxlint` linting, Vitest unit test suite, and production build (`vite build`) using Node 22 and cached `pnpm`.
+- **Deploy Job**: Runs conditionally on pushes to default branches (`main`/`master`) once validation passes. Deploys worker code and client assets to Cloudflare via `cloudflare/wrangler-action` using secret `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Concurrency cancellation (`cancel-in-progress: true`) prevents burning runner minutes on rapid successive pushes.
